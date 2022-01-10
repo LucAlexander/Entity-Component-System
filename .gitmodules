@@ -1,0 +1,9 @@
+[submodule "Type-Safe-Hash-Map"]
+	path = Type-Safe-Hash-Map
+	url = git@github.com:LucAlexander/Type-Safe-Hash-Map.git
+[submodule "Type-Safe-Vector"]
+	path = Type-Safe-Vector
+	url = git@github.com:LucAlexander/Type-Safe-Vector.git
+[submodule "Type-Safe-Queue"]
+	path = Type-Safe-Queue
+	url = git@github.com:LucAlexander/Type-Safe-Queue.git
