@@ -1,9 +1,9 @@
 #ifndef ECS_H
 #define ECS_H
 
-#include "vector.h"
-#include "hashMap.h"
-#include "queue.h"
+#include "Type-Safe-Vector/vector.h"
+#include "Type-Safe-Hash-Map/hashMap.h"
+#include "Type-Safe-Queue/queue.h"
 
 VECTOR(Vu32, uint32_t)
 VECTOR(Mu32, Vu32)
