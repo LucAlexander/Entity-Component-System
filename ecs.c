@@ -1,6 +1,7 @@
-#include "ecs.h"
 #include <stdarg.h>
 #include <stdio.h>
+
+#include "ecs.h"
 
 VECTOR_SOURCE(Vu32, uint32_t)
 VECTOR_SOURCE(Mu32, Vu32)
