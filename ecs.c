@@ -227,12 +227,10 @@ uint32_t summon(){
 	if (ecs.idBacklog.size==0){
 		id = ecs.maxId++;
 		addEntityToEmptyListing(id);
-		printf("[!] normal increment\n");
 		return id;
 	}
 	id = Qu32Pop(&(ecs.idBacklog));
 	addEntityToEmptyListing(id);
-	printf("[!] pop\n");
 	return id;
 	//TODO  we may need a more efficient entity creation system
 }
