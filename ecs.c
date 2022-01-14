@@ -244,14 +244,6 @@ void updateMovedComponentIndex(uint32_t eid, uint32_t cid, uint32_t updatedIndex
 	Archetype* media = ArchetypeListRef(&(ecs.archetypes), archetypeIndex);	
 	Vu32* indexes = ArchIndexesRef(&(media->data), eid);
 	uint32_t i;
-	if(indexes==NULL){
-		printf("indexes was NULL\n");
-		printf("archetypeIndex: %u eid: %u\n", archetypeIndex, eid);
-		printf("cids size: %u\n", media->cids.size);
-		printf("archetype location: %p\n", media);
-		printf("data location: %p\n", &(media->data));
-		printf("updated index: %u\n", updatedIndex);
-	}
 	for (i=0;i<indexes->size;++i){
 		if (Vu32Get(&(media->cids), i)==cid){
 			*Vu32Ref(indexes, i) = updatedIndex;
@@ -265,7 +257,6 @@ void smite(uint32_t eid){
 	if (res.error != 0){
 		return;
 	}
-	printf("supposed archetype was: %u\n", res.val);
 	Archetype* arc = ArchetypeListRef(&(ecs.archetypes), res.val);
 	Vu32 indexes = ArchIndexesGet(&(arc->data), eid).val;
 	uint32_t i, index;
@@ -298,7 +289,6 @@ void removeComponentData(Archetype* oldArc, Vu32* listing, uint32_t cid){
 			Vu32Remove(owners, index);
 			uint32_t id = Vu32Get(owners, index);
 			if (components->size != index){
-				printf("components->size: %u\n", components->size);
 				updateMovedComponentIndex(id, cid, index);
 			}
 			freeComponent(component);
@@ -310,7 +300,6 @@ void removeComponentData(Archetype* oldArc, Vu32* listing, uint32_t cid){
 
 void moveEntityDataDeductive(Archetype* oldArc, Archetype* newArc, uint32_t eid, uint32_t cid, uint32_t i){
 	ArchIndexesResult res = ArchIndexesPop(&(oldArc->data), eid);
-	printf("there was a supposed pop\n");
 	if (res.error!=0){
 		printf("error %u\n", res.error);
 	}
@@ -364,11 +353,7 @@ void moveEntityDataAdditive(Archetype* oldArc, Archetype* newArc, uint32_t eid, 
 	ArchIndexesPush(&(newArc->data), eid, ArchIndexesPop(&(oldArc->data), eid).val);
 	*(EntityArchetypeMapRef(&(ecs.entityLocation), eid)) = i;
 	Vector* reference = MatrixRef(&(ecs.componentData), cid);
-	//Vu32PushBack(ArchIndexesRef(&(newArc->data), eid), reference->size); // TODO remove
-	printf("REFERENCE SIZE was %u\n", reference->size);
 	placeIndexInCidOrder(&(newArc->cids), ArchIndexesRef(&(newArc->data), eid), cid, reference->size);
-	printf("should have therefore created something like %u: [%u %u]\n", eid, cid, reference->size);
-	// TODO put in position ^^^^ match cid with cid position in newArc->cids, insert there
 	VectorPushBack(reference, data);
 	Vu32PushBack(Mu32Ref(&(ecs.componentOwner), cid), eid);
 }
@@ -379,7 +364,6 @@ void replaceComponentData(Archetype* oldArc, uint32_t eid, uint32_t cid, void* d
 	void* component = VectorGet(componentList, index);
 	freeComponent(component);
 	VectorSet(componentList, index, data);
-	printf("a replace happened-------------------------------------------------------------------<<<<\n");
 }
 
 void addComponent(uint32_t eid, uint32_t cid, void* data){
@@ -406,7 +390,6 @@ void addComponent(uint32_t eid, uint32_t cid, void* data){
 	Archetype newArchetype = ArchetypeInit();
 	ArchetypeCopy(oldArc, &newArchetype);
 	Vu32PushInOrder(&(newArchetype.cids), cid, &u32Compare);
-	printf("%u\n", newArchetype.cids.size);
 	Mu64PushBack(&(ecs.masks), newMask);
 	ArchetypeListPushBack(&(ecs.archetypes), newArchetype);
 	moveEntityDataAdditive(oldArc, &newArchetype, eid, cid, data, i);
