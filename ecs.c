@@ -112,7 +112,7 @@ uint8_t maskContainsBit(Vu64* mask, uint32_t bit){
 	uint32_t pos = bit;
 	reduceMaskBitPair(&chunk, &pos);
 	uint64_t seg = Vu64Get(mask, chunk);
-	return (seg & (1<<pos)) == seg;
+	return (seg | (1<<pos)) == seg;
 }
 
 void maskRemoveBit(Vu64* mask, uint32_t bit){
@@ -126,7 +126,6 @@ void maskAddBit(Vu64* mask, uint32_t bit){
 	uint32_t chunk;
 	reduceMaskBitPair(&chunk, &bit);
 	uint64_t* seg = Vu64Ref(mask, chunk);
-	if (seg == NULL){printf("ah\n");}
 	*seg |= (1<<bit);
 }
 
@@ -179,6 +178,9 @@ Vu64 maskCopy(Vu64* mask){
 
 void maskChunkDisplay(uint64_t chunk){
 	uint32_t i;
+	if (chunk == 0){
+		printf(" 0 ");
+	}
 	while (chunk > 0){
 		printf("%u",(chunk%2));
 		chunk /= 2;
@@ -232,7 +234,6 @@ uint32_t summon(){
 	id = Qu32Pop(&(ecs.idBacklog));
 	addEntityToEmptyListing(id);
 	return id;
-	//TODO  we may need a more efficient entity creation system
 }
 
 void updateMovedComponentIndex(uint32_t eid, uint32_t cid, uint32_t updatedIndex){
@@ -240,9 +241,17 @@ void updateMovedComponentIndex(uint32_t eid, uint32_t cid, uint32_t updatedIndex
 	if (archetypeIndex == 0){
 		return;
 	}
-	Archetype* media =  ArchetypeListRef(&(ecs.archetypes), archetypeIndex);	
+	Archetype* media = ArchetypeListRef(&(ecs.archetypes), archetypeIndex);	
 	Vu32* indexes = ArchIndexesRef(&(media->data), eid);
 	uint32_t i;
+	if(indexes==NULL){
+		printf("indexes was NULL\n");
+		printf("archetypeIndex: %u eid: %u\n", archetypeIndex, eid);
+		printf("cids size: %u\n", media->cids.size);
+		printf("archetype location: %p\n", media);
+		printf("data location: %p\n", &(media->data));
+		printf("updated index: %u\n", updatedIndex);
+	}
 	for (i=0;i<indexes->size;++i){
 		if (Vu32Get(&(media->cids), i)==cid){
 			*Vu32Ref(indexes, i) = updatedIndex;
@@ -256,6 +265,7 @@ void smite(uint32_t eid){
 	if (res.error != 0){
 		return;
 	}
+	printf("supposed archetype was: %u\n", res.val);
 	Archetype* arc = ArchetypeListRef(&(ecs.archetypes), res.val);
 	Vu32 indexes = ArchIndexesGet(&(arc->data), eid).val;
 	uint32_t i, index;
@@ -272,6 +282,7 @@ void smite(uint32_t eid){
 		freeComponent(component);
 	}
 	ArchIndexesPop(&(arc->data), eid);
+	EntityArchetypeMapPop(&(ecs.entityLocation), eid);
 	Qu32Push(&(ecs.idBacklog), eid);
 }
 
@@ -286,7 +297,10 @@ void removeComponentData(Archetype* oldArc, Vu32* listing, uint32_t cid){
 			Vu32* owners = Mu32Ref(&(ecs.componentOwner), cid);
 			Vu32Remove(owners, index);
 			uint32_t id = Vu32Get(owners, index);
-			updateMovedComponentIndex(id, cid, index);
+			if (components->size != index){
+				printf("components->size: %u\n", components->size);
+				updateMovedComponentIndex(id, cid, index);
+			}
 			freeComponent(component);
 			Vu32RemoveInOrder(listing, k);
 			return;
@@ -295,7 +309,12 @@ void removeComponentData(Archetype* oldArc, Vu32* listing, uint32_t cid){
 }
 
 void moveEntityDataDeductive(Archetype* oldArc, Archetype* newArc, uint32_t eid, uint32_t cid, uint32_t i){
-	Vu32 listing = ArchIndexesPop(&(oldArc->data), eid).val;
+	ArchIndexesResult res = ArchIndexesPop(&(oldArc->data), eid);
+	printf("there was a supposed pop\n");
+	if (res.error!=0){
+		printf("error %u\n", res.error);
+	}
+	Vu32 listing = res.val;
 	removeComponentData(oldArc, &listing, cid);
 	ArchIndexesPush(&(newArc->data), eid, listing);
 	*EntityArchetypeMapRef(&(ecs.entityLocation), eid) = i; 
@@ -328,23 +347,39 @@ void removeComponent(uint32_t eid, uint32_t cid){
 	moveEntityDataDeductive(oldArc, &newArchetype, eid, cid, i);
 }
 
+void placeIndexInCidOrder(Vu32* cids, Vu32* vec, uint32_t cid, uint32_t val){
+	Vu32Iterator it = Vu32IteratorInit(cids);
+	uint32_t i = 0;
+	while(Vu32IteratorHasNext(&it)){
+		if (cid <= Vu32IteratorNext(&it)){
+			Vu32Insert(vec, i, val);
+			return;
+		}
+		i++;
+	}
+	Vu32Insert(vec, i, val);
+}
+
 void moveEntityDataAdditive(Archetype* oldArc, Archetype* newArc, uint32_t eid, uint32_t cid, void* data, uint32_t i){
 	ArchIndexesPush(&(newArc->data), eid, ArchIndexesPop(&(oldArc->data), eid).val);
 	*(EntityArchetypeMapRef(&(ecs.entityLocation), eid)) = i;
-	if (cid > ecs.componentData.size){
-		Vector cmpList = VectorInit();
-		VectorPushBack(&(cmpList), data);
-		Vu32 entList = Vu32Init();
-		Vu32PushBack(&entList, eid);
-		Mu32PushBack(&(ecs.componentOwner), entList);
-		MatrixPushBack(&(ecs.componentData), cmpList);
-		Vu32PushBack(ArchIndexesRef(&(newArc->data), eid), 0);
-		return;
-	}
 	Vector* reference = MatrixRef(&(ecs.componentData), cid);
-	Vu32PushBack(ArchIndexesRef(&(newArc->data), eid), reference->size);
+	//Vu32PushBack(ArchIndexesRef(&(newArc->data), eid), reference->size); // TODO remove
+	printf("REFERENCE SIZE was %u\n", reference->size);
+	placeIndexInCidOrder(&(newArc->cids), ArchIndexesRef(&(newArc->data), eid), cid, reference->size);
+	printf("should have therefore created something like %u: [%u %u]\n", eid, cid, reference->size);
+	// TODO put in position ^^^^ match cid with cid position in newArc->cids, insert there
 	VectorPushBack(reference, data);
 	Vu32PushBack(Mu32Ref(&(ecs.componentOwner), cid), eid);
+}
+
+void replaceComponentData(Archetype* oldArc, uint32_t eid, uint32_t cid, void* data){
+	uint32_t index = ArchetypeGetIndex(oldArc, eid, cid);
+	Vector* componentList = MatrixRef(&(ecs.componentData), cid);
+	void* component = VectorGet(componentList, index);
+	freeComponent(component);
+	VectorSet(componentList, index, data);
+	printf("a replace happened-------------------------------------------------------------------<<<<\n");
 }
 
 void addComponent(uint32_t eid, uint32_t cid, void* data){
@@ -355,6 +390,10 @@ void addComponent(uint32_t eid, uint32_t cid, void* data){
 	}
 	Archetype* oldArc = ArchetypeListRef(&(ecs.archetypes), res.val);
 	Vu64 newMask = maskCopy(Mu64Ref(&(ecs.masks), res.val));
+	if (maskContainsBit(&newMask, cid)){
+		replaceComponentData(oldArc, eid, cid, data);
+		return;
+	}
 	maskAddBit(&newMask, cid);
 	uint32_t i;
 	for (i = 0;i<ecs.masks.size;++i){
@@ -366,7 +405,8 @@ void addComponent(uint32_t eid, uint32_t cid, void* data){
 	}
 	Archetype newArchetype = ArchetypeInit();
 	ArchetypeCopy(oldArc, &newArchetype);
-	Vu32PushBack(&(newArchetype.cids), cid);
+	Vu32PushInOrder(&(newArchetype.cids), cid, &u32Compare);
+	printf("%u\n", newArchetype.cids.size);
 	Mu64PushBack(&(ecs.masks), newMask);
 	ArchetypeListPushBack(&(ecs.archetypes), newArchetype);
 	moveEntityDataAdditive(oldArc, &newArchetype, eid, cid, data, i);
@@ -479,10 +519,10 @@ void ecsDisplay(){
 	for (i = 0;i<ecs.archetypes.size;++i){
 		Archetype* arc = ArchetypeListRef(&(ecs.archetypes), i);
 		Vu64* mask = Mu64Ref(&(ecs.masks), i);
-		printf("\tArchetype  id %u, bitmask ", i);
+		printf("\t%p Archetype  id %u, bitmask ", arc, i);
 		maskDisplay(mask);
 		ArchIndexesIterator it = ArchIndexesIteratorInit(&(arc->data));
-		printf("\t\teid : [cid:index]\n");
+		printf("\t\t%p eid : [cid:index]\n", &(arc->data));
 		while (ArchIndexesIteratorHasNext(&it)){
 			ArchIndexesResult res = ArchIndexesIteratorNext(&it);
 			uint32_t key = res.key;

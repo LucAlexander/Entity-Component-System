@@ -67,6 +67,8 @@ void smite(uint32_t eid);
 void addEntityToEmptyListing(uint32_t eid);
 void removeComponent(uint32_t eid, uint32_t cid);
 void addComponent(uint32_t eid, uint32_t cid, void* data);
+void replaceComponentData(Archetype* oldArc, uint32_t eid, uint32_t cid, void* data);
+void placeIndexInCidOrder(Vu32* cids, Vu32* vec, uint32_t cid, uint32_t val);
 void moveEntityDataAdditive(Archetype* oldArc, Archetype* newArc, uint32_t eid, uint32_t cid, void* data, uint32_t i);
 void moveEntityDataDeductive(Archetype* oldArc, Archetype* newArc, uint32_t eid, uint32_t cid, uint32_t i);
 void removeComponentData(Archetype* oldArc, Vu32* listing, uint32_t cid);
