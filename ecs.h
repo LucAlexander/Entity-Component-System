@@ -49,6 +49,21 @@ Vu64 maskCopy(Vu64* mask);
 void maskDisplay(Vu64* mask);
 void maskChunkDisplay(uint64_t chunk);
 
+typedef struct ComponentQuery{
+	Vu32 entities;
+	Mu32 indexes;
+	Matrix components;
+}ComponentQuery;
+
+ComponentQuery* ecsQuery(Vu64* mask, Vu32* bits);
+ComponentQuery ComponentQueryInit();
+void queryPullArchetypeCid(Archetype* arc, uint32_t relIndex, uint32_t index, uint32_t* eids);
+void queryPullARchetypeEids(uint32_t* eids, uint32_t size);
+void queryScrubArchetype(Archetype* arc, Vu32* bits);
+void clearComponentQuery();
+void freeComponentQuery(ComponentQuery* q);
+void displayComponentQuery();
+
 typedef struct ECS{
 	Matrix componentData;
 	Mu32 componentOwner;
@@ -57,6 +72,7 @@ typedef struct ECS{
 	Qu32 idBacklog;
 	uint32_t maxId;
 	EntityArchetypeMap entityLocation;
+	ComponentQuery query;
 }ECS;
 
 void ecsInit(uint32_t componentCount);

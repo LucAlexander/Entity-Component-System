@@ -216,6 +216,7 @@ void ecsInit(uint32_t componentCount){
 	ArchetypeListPushBack(&(ecs.archetypes), empty);
 	Vu64 emptyMask = createMask(0);
 	Mu64PushBack(&(ecs.masks), emptyMask);
+	ecs.query = ComponentQueryInit();
 }
 
 void addEntityToEmptyListing(uint32_t eid){
@@ -332,8 +333,8 @@ void removeComponent(uint32_t eid, uint32_t cid){
 	ArchetypeCopy(oldArc, &newArchetype);
 	ArchetypeRemoveCid(&newArchetype, cid);	
 	Mu64PushBack(&(ecs.masks), newMask);
-	ArchetypeListPushBack(&(ecs.archetypes), newArchetype);
 	moveEntityDataDeductive(oldArc, &newArchetype, eid, cid, i);
+	ArchetypeListPushBack(&(ecs.archetypes), newArchetype);
 }
 
 void placeIndexInCidOrder(Vu32* cids, Vu32* vec, uint32_t cid, uint32_t val){
@@ -391,8 +392,8 @@ void addComponent(uint32_t eid, uint32_t cid, void* data){
 	ArchetypeCopy(oldArc, &newArchetype);
 	Vu32PushInOrder(&(newArchetype.cids), cid, &u32Compare);
 	Mu64PushBack(&(ecs.masks), newMask);
-	ArchetypeListPushBack(&(ecs.archetypes), newArchetype);
 	moveEntityDataAdditive(oldArc, &newArchetype, eid, cid, data, i);
+	ArchetypeListPushBack(&(ecs.archetypes), newArchetype);
 }
 
 void* getComponent(uint32_t eid, uint32_t cid){
@@ -425,6 +426,7 @@ void freeEcs(){
 	freeArchetypeList(&(ecs.archetypes));
 	Qu32Free(&(ecs.idBacklog));
 	EntityArchetypeMapFree(&(ecs.entityLocation));
+	freeComponentQuery(&(ecs.query));
 }
 
 void freeComponentData(Matrix* vec){
@@ -492,20 +494,21 @@ void ecsDisplay(){
 	for (i = 0;i<ecs.componentData.size;++i){
 		Vector* sub = MatrixRef(&(ecs.componentData), i);
 		Vu32* entities = Mu32Ref(&(ecs.componentOwner), i);
-		printf("\tCOMPONENT TYPE %u, %u components\n",i, sub->size);
+		printf("\tCOMPONENT TYPE %u, %u components\t\t\t\t%p\n",i, sub->size, sub);
 		for (k = 0;k<sub->size;++k){
 			uint32_t ent = Vu32Get(entities, k);
-			printf("\t\t%p is owned by entity %u in archetype %u\n", VectorGet(sub, k), ent, EntityArchetypeMapGet(&(ecs.entityLocation), ent).val);
+			printf("\t\t%u is owned by entity %u in archetype %u\t\t\t%p\n", k, ent, EntityArchetypeMapGet(&(ecs.entityLocation), ent).val, VectorGet(sub, k));
 		}
 	}
 	printf("ARCHETYPE LIST\n");
 	for (i = 0;i<ecs.archetypes.size;++i){
 		Archetype* arc = ArchetypeListRef(&(ecs.archetypes), i);
 		Vu64* mask = Mu64Ref(&(ecs.masks), i);
-		printf("\t%p Archetype  id %u, bitmask ", arc, i);
+		printf("\tArchetype  id %u\t\t\t\t%p\n", i, arc);
+		printf("\tBit Mask ");
 		maskDisplay(mask);
 		ArchIndexesIterator it = ArchIndexesIteratorInit(&(arc->data));
-		printf("\t\t%p eid : [cid:index]\n", &(arc->data));
+		printf("\t\teid : [cid:index] : size: %u\t\t\t%p\n", arc->data.size, &(arc->data));
 		while (ArchIndexesIteratorHasNext(&it)){
 			ArchIndexesResult res = ArchIndexesIteratorNext(&it);
 			uint32_t key = res.key;
@@ -518,4 +521,101 @@ void ecsDisplay(){
 		}
 	}
 	printf("MAX ID: %u\n", ecs.maxId);
+}
+
+ComponentQuery ComponentQueryInit(){
+	ComponentQuery q;
+	q.entities = Vu32Init();
+	q.indexes = Mu32Init();
+	q.components = MatrixInit();
+	return q;
+}
+
+ComponentQuery* ecsQuery(Vu64* mask, Vu32* bits){
+	clearComponentQuery();
+	uint32_t i;
+	for (i = 0;i<bits->size;++i){
+		Vu32 placeholder = Vu32Init();
+		Mu32PushBack(&(ecs.query.indexes), placeholder);
+	}
+	for (i = 0;i<ecs.masks.size;++i){
+		Vu64 candidate = Mu64Get(&(ecs.masks), i);
+		if(maskCompare(mask, &candidate)){
+			queryScrubArchetype(ArchetypeListRef(&(ecs.archetypes), i), bits);
+		}
+	}
+	uint32_t index;
+	for (i = 0;i<bits->size;++i){
+		index = Vu32Get(bits, i);
+		MatrixPushBack(&(ecs.query.components), MatrixGet(&(ecs.componentData), index));
+	}
+	return &(ecs.query);
+}
+
+void queryPullArchetypeCid(Archetype* arc, uint32_t relIndex, uint32_t index, uint32_t* eids){
+	Vu32* list = Mu32Ref(&(ecs.query.indexes), relIndex);
+	uint32_t i;
+	for (i = 0;i<arc->data.size;++i){
+		Vu32 indexes = ArchIndexesGet(&(arc->data), eids[i]).val;
+		Vu32PushBack(list, Vu32Get(&indexes, index));
+	}
+}
+
+void queryPullArchetypeEids(uint32_t* eids, uint32_t size){
+	uint32_t i;
+	for (i = 0;i<size;++i){
+		Vu32PushBack(&(ecs.query.entities), eids[i]);
+	}
+}
+
+void queryScrubArchetype(Archetype* arc, Vu32* bits){
+	uint32_t i;
+	uint32_t k = 0;
+	uint32_t currentBit = Vu32Get(bits, k++);
+	uint32_t* eids = ArchIndexesGetKeySet(&(arc->data));
+	queryPullArchetypeEids(eids, arc->data.size);
+	for (i = 0;i<arc->cids.size&&k<=bits->size;++i){
+		if (currentBit == Vu32Get(&(arc->cids), i)){
+			queryPullArchetypeCid(arc, k-1, i, eids);
+			currentBit = Vu32Get(bits, k++);
+		}
+	}
+	free(eids);
+	eids = NULL;
+}
+
+void clearComponentQuery(){
+	Vu32Clear(&(ecs.query.entities));
+	Mu32Clear(&(ecs.query.indexes));
+	MatrixClear(&(ecs.query.components));
+}
+
+void freeComponentQuery(ComponentQuery* q){
+	Vu32Free(&(q->entities));
+	freeMatrixu32(&(q->indexes));
+	MatrixFree(&(q->components));
+}
+
+void displayComponentQuery(){
+	uint32_t i, k;
+	printf("entities: \n");
+	for (i = 0;i<ecs.query.entities.size;++i){
+		printf("%u\t",Vu32Get(&(ecs.query.entities), i));
+	}
+	printf("\nindexes: \n");
+	for (i = 0;i<ecs.query.indexes.size;++i){
+		Vu32 sub = Mu32Get(&(ecs.query.indexes), i);
+		for (k = 0;k<sub.size;++k){
+			printf("%u\t",Vu32Get(&sub, k));
+		}
+		printf("\n");
+	}
+	printf("component lists:\n");
+	for (i = 0;i<ecs.query.components.size;++i){
+		printf("%p ",MatrixRef(&(ecs.query.components), i));
+		if ((i+1)%3 == 0){
+			printf("\n");	
+		}
+	}
+	printf("\n");
 }
