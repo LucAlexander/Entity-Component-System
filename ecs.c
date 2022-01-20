@@ -490,37 +490,49 @@ void freeMatrixu64(Mu64* m){
 
 void ecsDisplay(){
 	uint32_t i, k;
-	printf("ENTITY/COMPONENT DATA\n");
+	printf("_______________________________________________________________________________________________________________________________________________________________________\033[1;4mENTITY/COMPONENT DATA\033[0m\n");
 	for (i = 0;i<ecs.componentData.size;++i){
 		Vector* sub = MatrixRef(&(ecs.componentData), i);
 		Vu32* entities = Mu32Ref(&(ecs.componentOwner), i);
-		printf("\tCOMPONENT TYPE %u, %u components\t\t\t\t%p\n",i, sub->size, sub);
+		printf("\033[1;31m%p\033[0m\033[1;33m\tCOMPONENT TYPE %u, %u components\033[0m\n", sub, i, sub->size);
 		for (k = 0;k<sub->size;++k){
 			uint32_t ent = Vu32Get(entities, k);
-			printf("\t\t%u is owned by entity %u in archetype %u\t\t\t%p\n", k, ent, EntityArchetypeMapGet(&(ecs.entityLocation), ent).val, VectorGet(sub, k));
+			printf("\033[1;31m%p\033[0m\t\t%u is owned by entity %u in archetype %u\n", VectorGet(sub, k), k, ent, EntityArchetypeMapGet(&(ecs.entityLocation), ent).val);
 		}
 	}
-	printf("ARCHETYPE LIST\n");
+	printf("_______________________________________________________________________________________________________________________________________________________________________\033[1;4mARCHETYPE LIST\033[0m\n");
 	for (i = 0;i<ecs.archetypes.size;++i){
 		Archetype* arc = ArchetypeListRef(&(ecs.archetypes), i);
 		Vu64* mask = Mu64Ref(&(ecs.masks), i);
-		printf("\tArchetype  id %u\t\t\t\t%p\n", i, arc);
-		printf("\tBit Mask ");
+		printf("\033[1;31m%p\033[0m\t\033[1;33mArchetype id %u, Bit Mask ", arc, i);
 		maskDisplay(mask);
+		printf("\033[0m");
 		ArchIndexesIterator it = ArchIndexesIteratorInit(&(arc->data));
-		printf("\t\teid : [cid:index] : size: %u\t\t\t%p\n", arc->data.size, &(arc->data));
+		if (i==0){
+			printf("\t\t");
+			k = 0;
+			while (ArchIndexesIteratorHasNext(&it)){
+				printf("%u\t", ArchIndexesIteratorNext(&it).key);
+				if ((++k)%24==0){
+					printf("\n\t\t");
+				}
+			}
+			printf("\n");
+			continue;
+		}
+		printf("\033[1;31m%p\033[0m\t\033[1;33meid : [cid:index] : size: %u\033[0m\n", &(arc->data), arc->data.size);
 		while (ArchIndexesIteratorHasNext(&it)){
 			ArchIndexesResult res = ArchIndexesIteratorNext(&it);
 			uint32_t key = res.key;
 			Vu32 val = res.val;
-			printf("\t\t%u : ", key);
+			printf("\033[1;31m%p\033[0m\t\t%u\t:\t", ArchIndexesRef(&(arc->data), key), key);
 			for (k = 0;k<val.size;++k){
-				printf("[%u:%u] ", Vu32Get(&(arc->cids), k), Vu32Get(&val, k));
+				printf("[%u:%u]\t", Vu32Get(&(arc->cids), k), Vu32Get(&val, k));
 			}
 			printf("\n");
 		}
 	}
-	printf("MAX ID: %u\n", ecs.maxId);
+	printf("_______________________________________________________________________________________________________________________________________________________________________\033[1;4mMAX ID: %u\033[0m\n", ecs.maxId);
 }
 
 ComponentQuery ComponentQueryInit(){
