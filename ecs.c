@@ -302,7 +302,7 @@ void removeComponentData(Archetype* oldArc, Vu32* listing, uint32_t cid){
 void moveEntityDataDeductive(Archetype* oldArc, Archetype* newArc, uint32_t eid, uint32_t cid, uint32_t i){
 	ArchIndexesResult res = ArchIndexesPop(&(oldArc->data), eid);
 	if (res.error!=0){
-		printf("error %u\n", res.error);
+		return;
 	}
 	Vu32 listing = res.val;
 	removeComponentData(oldArc, &listing, cid);
@@ -370,7 +370,6 @@ void replaceComponentData(Archetype* oldArc, uint32_t eid, uint32_t cid, void* d
 void addComponent(uint32_t eid, uint32_t cid, void* data){
 	EntityArchetypeMapResult res = EntityArchetypeMapGet(&(ecs.entityLocation), eid);
 	if (res.error != 0){
-		printf("error: %u\n", res.error);
 		return;
 	}
 	Archetype* oldArc = ArchetypeListRef(&(ecs.archetypes), res.val);
