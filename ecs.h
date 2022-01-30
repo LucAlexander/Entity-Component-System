@@ -35,8 +35,7 @@ HASHMAP(EntityArchetypeMap, uint32_t, uint32_t)
 //          eids
 QUEUE(Qu32, uint32_t)
 
-VECTOR(Vector, void*)
-VECTOR(Matrix, Vector)
+VECTOR(Matrix, Cvector)
 
 uint8_t maskContainsBit(Vu64* mask, uint32_t bit);
 uint8_t maskCompare(Vu64* reference, Vu64* candidate);
@@ -64,6 +63,22 @@ void clearComponentQuery();
 void freeComponentQuery(ComponentQuery* q);
 void displayComponentQuery();
 
+typedef struct SysData{
+	uint32_t entity;
+	uint32_t index;
+	uint32_t* indexes;
+	ComponentQuery* query;
+}SysData;
+
+SysData SysDataInit(ComponentQuery* q);
+uint8_t SysDataHasData(SysData* s);
+void SysDataPopulateIndexes(SysData* s);
+void SysDataIterate(SysData* s);
+void SysDataFree(SysData* s);
+
+uint32_t entityArg(SysData* s);
+void* componentArg(SysData* s, uint32_t component);
+
 typedef struct ECS{
 	Matrix componentData;
 	Mu32 componentOwner;
@@ -75,7 +90,7 @@ typedef struct ECS{
 	ComponentQuery query;
 }ECS;
 
-void ecsInit(uint32_t componentCount);
+void ecsInit(uint32_t componentCount, ...);
 
 uint32_t summon();
 void smite(uint32_t eid);
@@ -96,8 +111,6 @@ uint8_t containsComponent(uint32_t eid, uint32_t cid);
 
 void freeEcs();
 void freeComponentData(Matrix* vec);
-void freeComponentList(Vector* vec);
-void freeComponent(void* cmp);
 void freeArchetypeList(ArchetypeList* list);
 void freeArchetype(Archetype* arc);
 void freeArchIndexes(ArchIndexes* a);
@@ -105,5 +118,15 @@ void freeMatrixu32(Mu32* m);
 void freeMatrixu64(Mu64* m);
 
 void ecsDisplay();
+
+typedef struct System{
+	Vu64 mask;
+	Vu32 bits;
+	void (*function)(SysData* sys);
+}System;
+
+System SystemInit(void sys(SysData*), uint32_t n, ...);
+void SystemActivate(System* sys);
+void SystemFree(System* sys);
 
 #endif

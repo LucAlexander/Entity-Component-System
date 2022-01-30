@@ -11,8 +11,7 @@ HASHMAP_SOURCE(ArchIndexes, uint32_t, Vu32, hashI)
 VECTOR_SOURCE(ArchetypeList, Archetype)
 HASHMAP_SOURCE(EntityArchetypeMap, uint32_t, uint32_t, hashI)
 QUEUE_SOURCE(Qu32, uint32_t)
-VECTOR_SOURCE(Vector, void*)
-VECTOR_SOURCE(Matrix, Vector)
+VECTOR_SOURCE(Matrix, Cvector)
 
 static ECS ecs = {0};
 
@@ -196,17 +195,21 @@ void maskDisplay(Vu64* mask){
 	printf("\n");
 }
 
-void ecsInit(uint32_t componentCount){
+void ecsInit(uint32_t componentCount, ...){
 	ecs.componentData = MatrixInit();
 	ecs.componentOwner = Mu32Init();
 	MatrixReserve(&(ecs.componentData), componentCount);
 	Mu32Reserve(&(ecs.componentOwner), componentCount);
 	uint32_t i;
+	va_list vlist;
+	va_start(vlist, componentCount);
 	for (i = 0;i<componentCount;++i){
-		Vector newList = VectorInit();
+		size_t compSize = va_arg(vlist, size_t);
+		Cvector newList = CvectorInit(compSize);
 		MatrixPushBack(&(ecs.componentData), newList);
 		Mu32PushBack(&(ecs.componentOwner), Vu32Init());
 	}
+	va_end(vlist);
 	ecs.archetypes = ArchetypeListInit();
 	ecs.masks = Mu64Init();
 	ecs.idBacklog = Qu32Init();
@@ -264,14 +267,12 @@ void smite(uint32_t eid){
 	for (i = 0;i<arc->cids.size;++i){
 		index = Vu32Get(&indexes, i);
 		uint32_t cid = Vu32Get(&(arc->cids), i);
-		Vector* components = MatrixRef(&(ecs.componentData), cid);
-		void* component = VectorGet(components, index);
-		VectorRemove(components, index);
+		Cvector* components = MatrixRef(&(ecs.componentData), cid);
+		CvectorRemove(components, index);
 		Vu32* owners = Mu32Ref(&(ecs.componentOwner), cid);
 		Vu32Remove(owners, index);
 		uint32_t id = Vu32Get(owners, index);
 		updateMovedComponentIndex(id, cid, index);
-		freeComponent(component);
 	}
 	ArchIndexesPop(&(arc->data), eid);
 	EntityArchetypeMapPop(&(ecs.entityLocation), eid);
@@ -283,16 +284,14 @@ void removeComponentData(Archetype* oldArc, Vu32* listing, uint32_t cid){
 	for (k = 0;k<oldArc->cids.size;++k){
 		if (Vu32Get(&(oldArc->cids), k)==cid){
 			uint32_t index = Vu32Get(listing, k);
-			Vector* components = MatrixRef(&(ecs.componentData), cid);
-			void* component = VectorGet(components, index);
-			VectorRemove(components, index);
+			Cvector* components = MatrixRef(&(ecs.componentData), cid);
+			CvectorRemove(components, index);
 			Vu32* owners = Mu32Ref(&(ecs.componentOwner), cid);
 			Vu32Remove(owners, index);
 			uint32_t id = Vu32Get(owners, index);
 			if (components->size != index){
 				updateMovedComponentIndex(id, cid, index);
 			}
-			freeComponent(component);
 			Vu32RemoveInOrder(listing, k);
 			return;
 		}
@@ -353,18 +352,16 @@ void placeIndexInCidOrder(Vu32* cids, Vu32* vec, uint32_t cid, uint32_t val){
 void moveEntityDataAdditive(Archetype* oldArc, Archetype* newArc, uint32_t eid, uint32_t cid, void* data, uint32_t i){
 	ArchIndexesPush(&(newArc->data), eid, ArchIndexesPop(&(oldArc->data), eid).val);
 	*(EntityArchetypeMapRef(&(ecs.entityLocation), eid)) = i;
-	Vector* reference = MatrixRef(&(ecs.componentData), cid);
+	Cvector* reference = MatrixRef(&(ecs.componentData), cid);
 	placeIndexInCidOrder(&(newArc->cids), ArchIndexesRef(&(newArc->data), eid), cid, reference->size);
-	VectorPushBack(reference, data);
+	CvectorPushBack(reference, data);
 	Vu32PushBack(Mu32Ref(&(ecs.componentOwner), cid), eid);
 }
 
 void replaceComponentData(Archetype* oldArc, uint32_t eid, uint32_t cid, void* data){
 	uint32_t index = ArchetypeGetIndex(oldArc, eid, cid);
-	Vector* componentList = MatrixRef(&(ecs.componentData), cid);
-	void* component = VectorGet(componentList, index);
-	freeComponent(component);
-	VectorSet(componentList, index, data);
+	Cvector* componentList = MatrixRef(&(ecs.componentData), cid);
+	CvectorSet(componentList, index, data);
 }
 
 void addComponent(uint32_t eid, uint32_t cid, void* data){
@@ -406,7 +403,7 @@ void* getComponent(uint32_t eid, uint32_t cid){
 	if (index == -1){
 		return NULL;
 	}
-	return VectorGet(MatrixRef(&(ecs.componentData), cid), index);
+	return CvectorGet(MatrixRef(&(ecs.componentData), cid), index);
 }
 
 uint8_t containsComponent(uint32_t eid, uint32_t cid){
@@ -431,22 +428,9 @@ void freeEcs(){
 void freeComponentData(Matrix* vec){
 	uint32_t i;
 	for (i = 0;i<vec->size;++i){
-		freeComponentList(MatrixRef(vec, i));
+		CvectorFree(MatrixRef(vec, i));
 	}
 	MatrixFree(vec);
-}
-
-void freeComponentList(Vector* vec){
-	uint32_t i;
-	for (i = 0;i<vec->size;++i){
-		freeComponent(VectorGet(vec, i));
-	}
-	VectorFree(vec);
-}
-
-void freeComponent(void* cmp){
-	free(cmp);
-	cmp = NULL;
 }
 
 void freeArchetypeList(ArchetypeList* list){
@@ -491,12 +475,12 @@ void ecsDisplay(){
 	uint32_t i, k;
 	printf("_______________________________________________________________________________________________________________________________________________________________________\033[1;4mENTITY/COMPONENT DATA\033[0m\n");
 	for (i = 0;i<ecs.componentData.size;++i){
-		Vector* sub = MatrixRef(&(ecs.componentData), i);
+		Cvector* sub = MatrixRef(&(ecs.componentData), i);
 		Vu32* entities = Mu32Ref(&(ecs.componentOwner), i);
 		printf("\033[1;31m%p\033[0m\033[1;33m\tCOMPONENT TYPE %u, %u components\033[0m\n", sub, i, sub->size);
 		for (k = 0;k<sub->size;++k){
 			uint32_t ent = Vu32Get(entities, k);
-			printf("\033[1;31m%p\033[0m\t\t%u is owned by entity %u in archetype %u\n", VectorGet(sub, k), k, ent, EntityArchetypeMapGet(&(ecs.entityLocation), ent).val);
+			printf("\033[1;31m%p\033[0m\t\t%u is owned by entity %u in archetype %u\n", CvectorGet(sub, k), k, ent, EntityArchetypeMapGet(&(ecs.entityLocation), ent).val);
 		}
 	}
 	printf("_______________________________________________________________________________________________________________________________________________________________________\033[1;4mARCHETYPE LIST\033[0m\n");
@@ -630,3 +614,77 @@ void displayComponentQuery(){
 	}
 	printf("\n");
 }
+
+System SystemInit(void f(SysData*), uint32_t n, ...){
+	System sys;
+	sys.function = f;
+	sys.mask = createMask(0);
+	sys.bits = Vu32Init();
+	va_list v;
+	va_start(v, n);
+	uint32_t i, bit;
+	for (i=0;i<n;++i){
+		bit = va_arg(v, uint32_t);
+		maskAddBit(&(sys.mask), bit);
+		Vu32PushInOrder(&(sys.bits), bit, u32Compare);
+	}
+	va_end(v);
+	return sys;
+}
+
+void SystemActivate(System* sys){
+	ComponentQuery* q = ecsQuery(&(sys->mask), &(sys->bits));
+	SysData data = SysDataInit(q);
+	while (SysDataHasData(&data)){
+		sys->function(&data);
+		SysDataIterate(&data);
+	}
+	SysDataFree(&data);
+}
+
+void SystemFree(System* sys){
+	Vu64Free(&(sys->mask));
+	Vu32Free(&(sys->bits));
+}
+
+SysData SysDataInit(ComponentQuery* q){
+	SysData s;
+	s.index = 0;
+	s.query = q;
+	s.indexes = malloc(sizeof(uint32_t)*q->entities.size);
+	SysDataPopulateIndexes(&s);
+	return s;
+}
+
+void SysDataPopulateIndexes(SysData* s){
+	s->entity = Vu32Get(&(s->query->entities), s->index);
+	uint32_t i;
+	for (i=0;i<s->query->indexes.size;++i){
+		s->indexes[i] = Vu32Get(Mu32Ref(&(s->query->indexes), i), s->index);
+	}
+}
+
+uint8_t SysDataHasData(SysData* s){
+	return s->index < s->query->entities.size;
+}
+
+void SysDataIterate(SysData* s){
+	s->index++;
+	if (SysDataHasData(s)){
+		SysDataPopulateIndexes(s);
+	}
+}
+
+void SysDataFree(SysData* s){
+	free(s->indexes);
+	s->indexes = NULL;
+}
+
+uint32_t entityArg(SysData* s){
+	return s->entity;	
+}
+
+void* componentArg(SysData* s, uint32_t component){
+	return CvectorGet(MatrixRef(&(s->query->components), component), s->indexes[component]);
+}
+
