@@ -584,9 +584,8 @@ void queryScrubArchetype(Archetype* arc, Vu32* bits){
 }
 
 void clearComponentQuery(){
-	Vu32Clear(&(ecs.query.entities));
-	Mu32Clear(&(ecs.query.indexes));
-	MatrixClear(&(ecs.query.components));
+	freeComponentQuery(&(ecs.query));
+	ecs.query = ComponentQueryInit();
 }
 
 void freeComponentQuery(ComponentQuery* q){
