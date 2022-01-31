@@ -317,6 +317,7 @@ void removeComponent(uint32_t eid, uint32_t cid){
 	Archetype* oldArc = ArchetypeListRef(&(ecs.archetypes), res.val);
 	Vu64 newMask = maskCopy(Mu64Ref(&(ecs.masks), res.val));
 	if (!maskContainsBit(&newMask, cid)){
+		Vu64Free(&newMask);
 		return;
 	}
 	maskRemoveBit(&newMask, cid);
@@ -325,6 +326,7 @@ void removeComponent(uint32_t eid, uint32_t cid){
 		if (maskEquals(Mu64Ref(&(ecs.masks), i), &newMask)){
 			Archetype* newArc = ArchetypeListRef(&(ecs.archetypes), i);
 			moveEntityDataDeductive(oldArc, newArc, eid, cid, i);
+			Vu64Free(&newMask);
 			return;
 		}
 	}
@@ -373,6 +375,7 @@ void addComponent(uint32_t eid, uint32_t cid, void* data){
 	Vu64 newMask = maskCopy(Mu64Ref(&(ecs.masks), res.val));
 	if (maskContainsBit(&newMask, cid)){
 		replaceComponentData(oldArc, eid, cid, data);
+		Vu64Free(&newMask);
 		return;
 	}
 	maskAddBit(&newMask, cid);
@@ -381,6 +384,7 @@ void addComponent(uint32_t eid, uint32_t cid, void* data){
 		if (maskEquals(Mu64Ref(&(ecs.masks), i), &newMask)){
 			Archetype* newArc = ArchetypeListRef(&(ecs.archetypes), i);
 			moveEntityDataAdditive(oldArc, newArc, eid, cid, data, i);
+			Vu64Free(&newMask);
 			return;
 		}
 	}
@@ -444,8 +448,8 @@ void freeArchetypeList(ArchetypeList* list){
 void freeArchIndexes(ArchIndexes* a){
 	ArchIndexesIterator it = ArchIndexesIteratorInit(a);
 	while (ArchIndexesIteratorHasNext(&it)){
-		Vu32 list = ArchIndexesIteratorNext(&it).val;
-		Vu32Free(&list);
+		Vu32* list = ArchIndexesRef(a, ArchIndexesIteratorNext(&it).key);
+		Vu32Free(list);
 	}
 	ArchIndexesFree(a);
 }
