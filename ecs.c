@@ -669,7 +669,7 @@ SysData SysDataInit(ComponentQuery* q){
 void SysDataPopulateIndexes(SysData* s){
 	s->entity = Vu32Get(&(s->query->entities), s->index);
 	uint32_t i;
-	for (i=0;i<s->query->indexes.size;++i){
+	for (i=0;i<s->query->entities.size;++i){
 		s->indexes[i] = Vu32Get(Mu32Ref(&(s->query->indexes), i), s->index);
 	}
 }
