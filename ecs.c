@@ -110,6 +110,9 @@ uint8_t maskContainsBit(Vu64* mask, uint32_t bit){
 	uint32_t chunk;
 	uint32_t pos = bit;
 	reduceMaskBitPair(&chunk, &pos);
+	if (chunk >= mask->size){
+		return 0;
+	}
 	uint64_t seg = Vu64Get(mask, chunk);
 	return (seg | (1<<pos)) == seg;
 }
@@ -124,6 +127,9 @@ void maskRemoveBit(Vu64* mask, uint32_t bit){
 void maskAddBit(Vu64* mask, uint32_t bit){
 	uint32_t chunk;
 	reduceMaskBitPair(&chunk, &bit);
+	while (chunk >= mask->size){
+		Vu64PushBack(mask, 0);
+	}
 	uint64_t* seg = Vu64Ref(mask, chunk);
 	*seg |= (1<<bit);
 }
@@ -262,10 +268,10 @@ void smite(uint32_t eid){
 		return;
 	}
 	Archetype* arc = ArchetypeListRef(&(ecs.archetypes), res.val);
-	Vu32 indexes = ArchIndexesGet(&(arc->data), eid).val;
+	Vu32* indexes = ArchIndexesRef(&(arc->data), eid);
 	uint32_t i, index;
 	for (i = 0;i<arc->cids.size;++i){
-		index = Vu32Get(&indexes, i);
+		index = Vu32Get(indexes, i);
 		uint32_t cid = Vu32Get(&(arc->cids), i);
 		Cvector* components = MatrixRef(&(ecs.componentData), cid);
 		CvectorRemove(components, index);
@@ -274,6 +280,7 @@ void smite(uint32_t eid){
 		uint32_t id = Vu32Get(owners, index);
 		updateMovedComponentIndex(id, cid, index);
 	}
+	Vu32Free(indexes);
 	ArchIndexesPop(&(arc->data), eid);
 	EntityArchetypeMapPop(&(ecs.entityLocation), eid);
 	Qu32Push(&(ecs.idBacklog), eid);
