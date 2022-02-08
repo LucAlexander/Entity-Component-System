@@ -10,6 +10,7 @@ VECTOR_SOURCE(Mu64, Vu64)
 HASHMAP_SOURCE(ArchIndexes, uint32_t, Vu32, hashI)
 VECTOR_SOURCE(ArchetypeList, Archetype)
 HASHMAP_SOURCE(EntityArchetypeMap, uint32_t, uint32_t, hashI)
+HASHMAP_SOURCE(EntityFlags, uint32_t, uint64_t, hashI)
 QUEUE_SOURCE(Qu32, uint32_t)
 VECTOR_SOURCE(Matrix, Cvector)
 
@@ -220,6 +221,7 @@ void ecsInit(uint32_t componentCount, ...){
 	ecs.masks = Mu64Init();
 	ecs.idBacklog = Qu32Init();
 	ecs.maxId = 0;
+	ecs.flags = EntityFlagsInit();
 	ecs.entityLocation = EntityArchetypeMapInit();
 	Archetype empty = ArchetypeInit();
 	ArchetypeListPushBack(&(ecs.archetypes), empty);
@@ -230,6 +232,7 @@ void ecsInit(uint32_t componentCount, ...){
 
 void addEntityToEmptyListing(uint32_t eid){
 	EntityArchetypeMapPush(&(ecs.entityLocation), eid, 0);
+	EntityFlagsPush(&(ecs.flags), eid, 0);
 	Archetype* arc = ArchetypeListRef(&(ecs.archetypes), 0);
 	ArchIndexesPush(&(arc->data), eid, Vu32Init());
 }
@@ -283,6 +286,7 @@ void smite(uint32_t eid){
 	Vu32Free(indexes);
 	ArchIndexesPop(&(arc->data), eid);
 	EntityArchetypeMapPop(&(ecs.entityLocation), eid);
+	EntityFlagsPop(&(ecs.flags), eid);
 	Qu32Push(&(ecs.idBacklog), eid);
 }
 
@@ -403,6 +407,22 @@ void addComponent(uint32_t eid, uint32_t cid, void* data){
 	ArchetypeListPushBack(&(ecs.archetypes), newArchetype);
 }
 
+void addEntityFlag(uint32_t eid, uint64_t flagBit){
+	uint64_t* flag = (EntityFlagsRef(&(ecs.flags), eid));
+	if (flag == NULL){
+		return;
+	}
+	*flag |= flagBit;
+}
+
+void removeEntityFlag(uint32_t eid, uint64_t flagBit){
+	uint64_t* flag = (EntityFlagsRef(&(ecs.flags), eid));
+	if (flag == NULL){
+		return;
+	}
+	*flag &= ~(flagBit);
+}
+
 void* getComponent(uint32_t eid, uint32_t cid){
 	EntityArchetypeMapResult res = EntityArchetypeMapGet(&(ecs.entityLocation), eid);
 	if (res.error != 0){
@@ -433,6 +453,7 @@ void freeEcs(){
 	freeArchetypeList(&(ecs.archetypes));
 	Qu32Free(&(ecs.idBacklog));
 	EntityArchetypeMapFree(&(ecs.entityLocation));
+	EntityFlagsFree(&(ecs.flags));
 	freeComponentQuery(&(ecs.query));
 }
 
@@ -523,7 +544,7 @@ void ecsDisplay(){
 			for (k = 0;k<val.size;++k){
 				printf("[%u:%u]\t", Vu32Get(&(arc->cids), k), Vu32Get(&val, k));
 			}
-			printf("\n");
+			printf("flags: %lu\n", EntityFlagsGet(&(ecs.flags), key).val);
 		}
 	}
 	printf("_______________________________________________________________________________________________________________________________________________________________________\033[1;4mMAX ID: %u\033[0m\n", ecs.maxId);

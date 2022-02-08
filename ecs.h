@@ -31,6 +31,7 @@ VECTOR(ArchetypeList, Archetype)
 
 //                          eid     , archetype id
 HASHMAP(EntityArchetypeMap, uint32_t, uint32_t)
+HASHMAP(EntityFlags, uint32_t, uint64_t)
 
 //          eids
 QUEUE(Qu32, uint32_t)
@@ -87,6 +88,7 @@ typedef struct ECS{
 	Qu32 idBacklog;
 	uint32_t maxId;
 	EntityArchetypeMap entityLocation;
+	EntityFlags flags;
 	ComponentQuery query;
 }ECS;
 
@@ -104,6 +106,9 @@ void moveEntityDataAdditive(Archetype* oldArc, Archetype* newArc, uint32_t eid, 
 void moveEntityDataDeductive(Archetype* oldArc, Archetype* newArc, uint32_t eid, uint32_t cid, uint32_t i);
 void removeComponentData(Archetype* oldArc, Vu32* listing, uint32_t cid);
 void updateMovedComponentIndex(uint32_t eid, uint32_t cid, uint32_t updatedIndex);
+
+void addEntityFlag(uint32_t eid, uint64_t flagBit);
+void removeEntityFlag(uint32_t eid, uint64_t flagBit);
 
 void* getComponent(uint32_t eid, uint32_t cid);
 
