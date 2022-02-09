@@ -37,6 +37,7 @@ HASHMAP(EntityFlags, uint32_t, uint64_t)
 QUEUE(Qu32, uint32_t)
 
 VECTOR(Matrix, Cvector)
+VECTOR(MatrixByPtr, Cvector*)
 
 uint8_t maskContainsBit(Vu64* mask, uint32_t bit);
 uint8_t maskCompare(Vu64* reference, Vu64* candidate);
@@ -52,7 +53,6 @@ void maskChunkDisplay(uint64_t chunk);
 typedef struct ComponentQuery{
 	Vu32 entities;
 	Mu32 indexes;
-	Matrix components;
 }ComponentQuery;
 
 ComponentQuery* ecsQuery(Vu64* mask, Vu32* bits, uint64_t filter);
@@ -69,6 +69,7 @@ typedef struct SysData{
 	uint32_t index;
 	uint32_t* indexes;
 	ComponentQuery* query;
+	MatrixByPtr* components;
 }SysData;
 
 SysData SysDataInit(ComponentQuery* q);
@@ -133,6 +134,7 @@ typedef struct System{
 	Vu32 bits;
 	uint64_t filter;
 	void (*function)(SysData* sys);
+	MatrixByPtr components;
 }System;
 
 System SystemInit(void sys(SysData*), uint32_t n, ...);

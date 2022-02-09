@@ -13,6 +13,7 @@ HASHMAP_SOURCE(EntityArchetypeMap, uint32_t, uint32_t, hashI)
 HASHMAP_SOURCE(EntityFlags, uint32_t, uint64_t, hashI)
 QUEUE_SOURCE(Qu32, uint32_t)
 VECTOR_SOURCE(Matrix, Cvector)
+VECTOR_SOURCE(MatrixByPtr, Cvector*);
 
 static ECS ecs = {0};
 
@@ -554,7 +555,6 @@ ComponentQuery ComponentQueryInit(){
 	ComponentQuery q;
 	q.entities = Vu32Init();
 	q.indexes = Mu32Init();
-	q.components = MatrixInit();
 	return q;
 }
 
@@ -570,11 +570,6 @@ ComponentQuery* ecsQuery(Vu64* mask, Vu32* bits, uint64_t filter){
 		if(maskCompare(mask, &candidate)){
 			queryScrubArchetype(ArchetypeListRef(&(ecs.archetypes), i), bits, filter);
 		}
-	}
-	uint32_t index;
-	for (i = 0;i<bits->size;++i){
-		index = Vu32Get(bits, i);
-		MatrixPushBack(&(ecs.query.components), MatrixGet(&(ecs.componentData), index));
 	}
 	return &(ecs.query);
 }
@@ -625,7 +620,6 @@ void clearComponentQuery(){
 void freeComponentQuery(ComponentQuery* q){
 	Vu32Free(&(q->entities));
 	freeMatrixu32(&(q->indexes));
-	MatrixFree(&(q->components));
 }
 
 void displayComponentQuery(){
@@ -642,13 +636,6 @@ void displayComponentQuery(){
 		}
 		printf("\n");
 	}
-	printf("component lists:\n");
-	for (i = 0;i<ecs.query.components.size;++i){
-		printf("%p ",MatrixRef(&(ecs.query.components), i));
-		if ((i+1)%3 == 0){
-			printf("\n");	
-		}
-	}
 	printf("\n");
 }
 
@@ -658,6 +645,7 @@ System SystemInit(void f(SysData*), uint32_t n, ...){
 	sys.mask = createMask(0);
 	sys.bits = Vu32Init();
 	sys.filter = ENTITY_DEACTIVATE;
+	sys.components = MatrixByPtrInit();
 	va_list v;
 	va_start(v, n);
 	uint32_t i, bit;
@@ -667,6 +655,10 @@ System SystemInit(void f(SysData*), uint32_t n, ...){
 		Vu32PushInOrder(&(sys.bits), bit, u32Compare);
 	}
 	va_end(v);
+	for (i=0;i<n;++i){
+		uint32_t index = Vu32Get(&(sys.bits), i);
+		MatrixByPtrPushBack(&(sys.components), MatrixRef(&(ecs.componentData), index));
+	}
 	return sys;
 }
 
@@ -681,6 +673,7 @@ void SystemRemoveFilter(System* sys, uint64_t flags){
 void SystemActivate(System* sys){
 	ComponentQuery* q = ecsQuery(&(sys->mask), &(sys->bits), sys->filter);
 	SysData data = SysDataInit(q);
+	data.components = &(sys->components);
 	while (SysDataHasData(&data)){
 		sys->function(&data);
 		SysDataIterate(&data);
@@ -691,6 +684,7 @@ void SystemActivate(System* sys){
 void SystemFree(System* sys){
 	Vu64Free(&(sys->mask));
 	Vu32Free(&(sys->bits));
+	MatrixByPtrFree(&(sys->components));
 }
 
 SysData SysDataInit(ComponentQuery* q){
@@ -698,6 +692,7 @@ SysData SysDataInit(ComponentQuery* q){
 	s.index = 0;
 	s.query = q;
 	s.indexes = malloc(sizeof(uint32_t)*q->entities.size);
+	s.components = NULL;
 	SysDataPopulateIndexes(&s);
 	return s;
 }
@@ -724,13 +719,14 @@ void SysDataIterate(SysData* s){
 void SysDataFree(SysData* s){
 	free(s->indexes);
 	s->indexes = NULL;
+	s->components = NULL;
 }
 
 uint32_t entityArg(SysData* s){
-	return s->entity;	
+	return s->entity;
 }
 
 void* componentArg(SysData* s, uint32_t component){
-	return CvectorGet(MatrixRef(&(s->query->components), component), s->indexes[component]);
+	return CvectorGet(MatrixByPtrGet(s->components, component), s->indexes[component]);
 }
 
