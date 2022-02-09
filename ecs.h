@@ -55,11 +55,11 @@ typedef struct ComponentQuery{
 	Matrix components;
 }ComponentQuery;
 
-ComponentQuery* ecsQuery(Vu64* mask, Vu32* bits);
+ComponentQuery* ecsQuery(Vu64* mask, Vu32* bits, uint64_t filter);
 ComponentQuery ComponentQueryInit();
-void queryPullArchetypeCid(Archetype* arc, uint32_t relIndex, uint32_t index, uint32_t* eids);
-void queryPullARchetypeEids(uint32_t* eids, uint32_t size);
-void queryScrubArchetype(Archetype* arc, Vu32* bits);
+void queryPullArchetypeCid(Archetype* arc, uint32_t relIndex, uint32_t index, uint32_t* eids, uint64_t filter);
+void queryPullArchetypeEids(uint32_t* eids, uint32_t size, uint64_t filter);
+void queryScrubArchetype(Archetype* arc, Vu32* bits, uint64_t filter);
 void clearComponentQuery();
 void freeComponentQuery(ComponentQuery* q);
 void displayComponentQuery();
@@ -124,13 +124,20 @@ void freeMatrixu64(Mu64* m);
 
 void ecsDisplay();
 
+enum ESC_DEFAULT_FLAGS{
+	ENTITY_DEACTIVATE=1
+};
+
 typedef struct System{
 	Vu64 mask;
 	Vu32 bits;
+	uint64_t filter;
 	void (*function)(SysData* sys);
 }System;
 
 System SystemInit(void sys(SysData*), uint32_t n, ...);
+void SystemAddFilter(System* sys, uint64_t flags);
+void SystemRemoveFilter(System* sys, uint64_t flags);
 void SystemActivate(System* sys);
 void SystemFree(System* sys);
 

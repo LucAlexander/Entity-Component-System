@@ -558,7 +558,7 @@ ComponentQuery ComponentQueryInit(){
 	return q;
 }
 
-ComponentQuery* ecsQuery(Vu64* mask, Vu32* bits){
+ComponentQuery* ecsQuery(Vu64* mask, Vu32* bits, uint64_t filter){
 	clearComponentQuery();
 	uint32_t i;
 	for (i = 0;i<bits->size;++i){
@@ -568,7 +568,7 @@ ComponentQuery* ecsQuery(Vu64* mask, Vu32* bits){
 	for (i = 0;i<ecs.masks.size;++i){
 		Vu64 candidate = Mu64Get(&(ecs.masks), i);
 		if(maskCompare(mask, &candidate)){
-			queryScrubArchetype(ArchetypeListRef(&(ecs.archetypes), i), bits);
+			queryScrubArchetype(ArchetypeListRef(&(ecs.archetypes), i), bits, filter);
 		}
 	}
 	uint32_t index;
@@ -579,31 +579,37 @@ ComponentQuery* ecsQuery(Vu64* mask, Vu32* bits){
 	return &(ecs.query);
 }
 
-void queryPullArchetypeCid(Archetype* arc, uint32_t relIndex, uint32_t index, uint32_t* eids){
+void queryPullArchetypeCid(Archetype* arc, uint32_t relIndex, uint32_t index, uint32_t* eids, uint64_t filter){
 	Vu32* list = Mu32Ref(&(ecs.query.indexes), relIndex);
 	uint32_t i;
 	for (i = 0;i<arc->data.size;++i){
-		Vu32 indexes = ArchIndexesGet(&(arc->data), eids[i]).val;
-		Vu32PushBack(list, Vu32Get(&indexes, index));
+		uint32_t eid = eids[i];
+		if ((EntityFlagsGet(&(ecs.flags), eid).val & filter) != filter){
+			Vu32 indexes = ArchIndexesGet(&(arc->data), eid).val;
+			Vu32PushBack(list, Vu32Get(&indexes, index));
+		}
 	}
 }
 
-void queryPullArchetypeEids(uint32_t* eids, uint32_t size){
+void queryPullArchetypeEids(uint32_t* eids, uint32_t size, uint64_t filter){
 	uint32_t i;
 	for (i = 0;i<size;++i){
-		Vu32PushBack(&(ecs.query.entities), eids[i]);
+		uint32_t eid = eids[i];
+		if ((EntityFlagsGet(&(ecs.flags), eid).val & filter) != filter){
+			Vu32PushBack(&(ecs.query.entities), eid);
+		}
 	}
 }
 
-void queryScrubArchetype(Archetype* arc, Vu32* bits){
+void queryScrubArchetype(Archetype* arc, Vu32* bits, uint64_t filter){
 	uint32_t i;
 	uint32_t k = 0;
 	uint32_t currentBit = Vu32Get(bits, k++);
 	uint32_t* eids = ArchIndexesGetKeySet(&(arc->data));
-	queryPullArchetypeEids(eids, arc->data.size);
+	queryPullArchetypeEids(eids, arc->data.size, filter);
 	for (i = 0;i<arc->cids.size&&k<=bits->size;++i){
 		if (currentBit == Vu32Get(&(arc->cids), i)){
-			queryPullArchetypeCid(arc, k-1, i, eids);
+			queryPullArchetypeCid(arc, k-1, i, eids, filter);
 			currentBit = Vu32Get(bits, k++);
 		}
 	}
@@ -651,6 +657,7 @@ System SystemInit(void f(SysData*), uint32_t n, ...){
 	sys.function = f;
 	sys.mask = createMask(0);
 	sys.bits = Vu32Init();
+	sys.filter = ENTITY_DEACTIVATE;
 	va_list v;
 	va_start(v, n);
 	uint32_t i, bit;
@@ -663,8 +670,16 @@ System SystemInit(void f(SysData*), uint32_t n, ...){
 	return sys;
 }
 
+void SystemAddFilter(System* sys, uint64_t flags){
+	sys->filter |= flags;
+}
+
+void SystemRemoveFilter(System* sys, uint64_t flags){
+	sys->filter &= ~(flags);
+}
+
 void SystemActivate(System* sys){
-	ComponentQuery* q = ecsQuery(&(sys->mask), &(sys->bits));
+	ComponentQuery* q = ecsQuery(&(sys->mask), &(sys->bits), sys->filter);
 	SysData data = SysDataInit(q);
 	while (SysDataHasData(&data)){
 		sys->function(&data);
