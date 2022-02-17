@@ -11,6 +11,9 @@ compile:
 debug:
 	$(CC) $(FILES) $(CLIBS) $(CDEBUGFLAGS) $(CFLAGS) $(OUT)
 
+linkedCompile:
+	$(CC) ecsmain.c -L. -lEntityComponentSystem $(CLIBS) $(CFLAGS) $(OUT)
+
 build:
 	mkdir object
 	$(CC) -c ecs.c -o ./object/ecs.o
