@@ -184,12 +184,11 @@ Vu64 maskCopy(Vu64* mask){
 }
 
 void maskChunkDisplay(uint64_t chunk){
-	uint32_t i;
 	if (chunk == 0){
 		printf(" 0 ");
 	}
 	while (chunk > 0){
-		printf("%u",(chunk%2));
+		printf("%lu",(chunk%2));
 		chunk /= 2;
 	}
 }
