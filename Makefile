@@ -1,13 +1,25 @@
+CC=gcc
 CFLAGS=-lm -o
 CDEBUGFLAGS=-Wall -g
 OUT=ecsrun
 CLIBS=-LDataContainers -lDataContainers
 FILES=ecsmain.c ecs.c ecs.h 
+LNAME=libEntityComponentSystem.a
 
 compile:
-	gcc $(FILES) $(CLIBS) $(CFLAGS) $(OUT) 
+	$(CC) $(FILES) $(CLIBS) $(CFLAGS) $(OUT) 
 debug:
-	gcc $(FILES) $(CLIBS) $(CDEBUGFLAGS) $(CFLAGS) $(OUT)
+	$(CC) $(FILES) $(CLIBS) $(CDEBUGFLAGS) $(CFLAGS) $(OUT)
+
+build:
+	mkdir object
+	$(CC) -c ecs.c -o ./object/ecs.o
+	ar rcs $(LNAME) ./object/*.o
+
+destruct:
+	rm -rf ./object
+	rm -rf $(LNAME)
+
 clean:
 	rm -f smite.txt
 	rm -f summon.txt
