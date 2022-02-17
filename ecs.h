@@ -1,9 +1,9 @@
 #ifndef ECS_H
 #define ECS_H
 
-#include "DataContainers/src/vector/vector.h"
-#include "DataContainers/src/hashMap/hashMap.h"
-#include "DataContainers/src/queue/queue.h"
+#include "../DataContainers/src/vector/vector.h"
+#include "../DataContainers/src/hashMap/hashMap.h"
+#include "../DataContainers/src/queue/queue.h"
 
 VECTOR(Vu32, uint32_t)
 VECTOR(Mu32, Vu32)

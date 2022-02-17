@@ -2,7 +2,7 @@ CC=gcc
 CFLAGS=-lm -o
 CDEBUGFLAGS=-Wall -g
 OUT=ecsrun
-CLIBS=-LDataContainers -lDataContainers
+CLIBS=-L../DataContainers -lDataContainers
 FILES=ecsmain.c ecs.c ecs.h 
 LNAME=libEntityComponentSystem.a
 
