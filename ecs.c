@@ -412,7 +412,7 @@ void addEntityFlag(uint32_t eid, uint64_t flagBit){
 	if (flag == NULL){
 		return;
 	}
-	*flag |= flagBit;
+	*flag |= (1<<flagBit);
 }
 
 void removeEntityFlag(uint32_t eid, uint64_t flagBit){
@@ -420,7 +420,7 @@ void removeEntityFlag(uint32_t eid, uint64_t flagBit){
 	if (flag == NULL){
 		return;
 	}
-	*flag &= ~(flagBit);
+	*flag &= ~(1<<flagBit);
 }
 
 void* getComponent(uint32_t eid, uint32_t cid){

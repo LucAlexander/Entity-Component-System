@@ -126,7 +126,7 @@ void freeMatrixu64(Mu64* m);
 void ecsDisplay();
 
 enum ESC_DEFAULT_FLAGS{
-	ENTITY_DEACTIVATE=1
+	ENTITY_DEACTIVATE=0
 };
 
 typedef struct System{
