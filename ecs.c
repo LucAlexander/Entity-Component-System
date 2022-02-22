@@ -407,6 +407,23 @@ void addComponent(uint32_t eid, uint32_t cid, void* data){
 	ArchetypeListPushBack(&(ecs.archetypes), newArchetype);
 }
 
+void markForPurge(uint32_t eid){
+	addEntityFlag(eid, ENTITY_DEACTIVATE);
+}
+
+void purgeDeactivatedData(){
+	uint32_t* entities = EntityFlagsGetKeySet(&(ecs.flags));
+	uint32_t i;
+	for (i = 0;i<ecs.flags.size;++i){
+		uint32_t eid = entities[i];
+		uint64_t flag = EntityFlagsGet(&(ecs.flags), entities[i]).val;
+		if (flag & ENTITY_DEACTIVATE != flag){
+			smite(eid);
+		}
+	}
+	free(entities);
+}
+
 void addEntityFlag(uint32_t eid, uint64_t flagBit){
 	uint64_t* flag = (EntityFlagsRef(&(ecs.flags), eid));
 	if (flag == NULL){

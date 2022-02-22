@@ -108,6 +108,9 @@ void moveEntityDataDeductive(Archetype* oldArc, Archetype* newArc, uint32_t eid,
 void removeComponentData(Archetype* oldArc, Vu32* listing, uint32_t cid);
 void updateMovedComponentIndex(uint32_t eid, uint32_t cid, uint32_t updatedIndex);
 
+void markForPurge(uint32_t eid);
+void purgeDeactivatedData();
+
 void addEntityFlag(uint32_t eid, uint64_t flagBit);
 void removeEntityFlag(uint32_t eid, uint64_t flagBit);
 
