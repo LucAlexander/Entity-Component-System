@@ -660,7 +660,7 @@ System SystemInit(void f(SysData*), uint32_t n, ...){
 	sys.function = f;
 	sys.mask = createMask(0);
 	sys.bits = Vu32Init();
-	sys.filter = ENTITY_DEACTIVATE;
+	sys.filter = (1<<ENTITY_DEACTIVATE);
 	sys.components = MatrixByPtrInit();
 	va_list v;
 	va_start(v, n);
