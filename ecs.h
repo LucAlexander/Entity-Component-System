@@ -141,8 +141,8 @@ typedef struct System{
 }System;
 
 System SystemInit(void sys(SysData*), uint32_t n, ...);
-void SystemAddFilter(System* sys, uint64_t flags);
-void SystemRemoveFilter(System* sys, uint64_t flags);
+void SystemAddFilter(System* sys, uint64_t flag);
+void SystemRemoveFilter(System* sys, uint64_t flag);
 void SystemActivate(System* sys);
 void SystemFree(System* sys);
 

@@ -678,12 +678,12 @@ System SystemInit(void f(SysData*), uint32_t n, ...){
 	return sys;
 }
 
-void SystemAddFilter(System* sys, uint64_t flags){
-	sys->filter |= flags;
+void SystemAddFilter(System* sys, uint64_t flag){
+	sys->filter |= (1<<flag);
 }
 
-void SystemRemoveFilter(System* sys, uint64_t flags){
-	sys->filter &= ~(flags);
+void SystemRemoveFilter(System* sys, uint64_t flag){
+	sys->filter &= ~(1<<flag);
 }
 
 void SystemActivate(System* sys){
