@@ -596,7 +596,7 @@ void queryPullArchetypeCid(Archetype* arc, uint32_t relIndex, uint32_t index, ui
 	uint32_t i;
 	for (i = 0;i<arc->data.size;++i){
 		uint32_t eid = eids[i];
-		if ((EntityFlagsGet(&(ecs.flags), eid).val & filter) != filter){
+		if (((EntityFlagsGet(&(ecs.flags), eid).val & filter) != filter)||(filter==0)){
 			Vu32 indexes = ArchIndexesGet(&(arc->data), eid).val;
 			Vu32PushBack(list, Vu32Get(&indexes, index));
 		}
@@ -607,7 +607,7 @@ void queryPullArchetypeEids(uint32_t* eids, uint32_t size, uint64_t filter){
 	uint32_t i;
 	for (i = 0;i<size;++i){
 		uint32_t eid = eids[i];
-		if ((EntityFlagsGet(&(ecs.flags), eid).val & filter) != filter){
+		if (((EntityFlagsGet(&(ecs.flags), eid).val & filter) != filter)||(filter==0)){
 			Vu32PushBack(&(ecs.query.entities), eid);
 		}
 	}

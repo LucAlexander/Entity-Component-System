@@ -23,6 +23,10 @@ destruct:
 	rm -rf ./object
 	rm -rf $(LNAME)
 
+rebuild:
+	make destruct
+	make build
+
 clean:
 	rm -f smite.txt
 	rm -f summon.txt
