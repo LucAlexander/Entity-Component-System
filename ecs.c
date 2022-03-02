@@ -417,7 +417,7 @@ void purgeDeactivatedData(){
 	for (i = 0;i<ecs.flags.size;++i){
 		uint32_t eid = entities[i];
 		uint64_t flag = EntityFlagsGet(&(ecs.flags), entities[i]).val;
-		if (flag & ENTITY_DEACTIVATE != flag){
+		if ((flag & ENTITY_DEACTIVATE) == ENTITY_DEACTIVATE){
 			smite(eid);
 		}
 	}
@@ -660,7 +660,7 @@ System SystemInit(void f(SysData*), uint32_t n, ...){
 	sys.function = f;
 	sys.mask = createMask(0);
 	sys.bits = Vu32Init();
-	sys.filter = (1<<ENTITY_DEACTIVATE);
+	sys.filter = 0;
 	sys.components = MatrixByPtrInit();
 	va_list v;
 	va_start(v, n);
