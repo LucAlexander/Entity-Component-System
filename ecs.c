@@ -417,7 +417,8 @@ void purgeDeactivatedData(){
 	for (i = 0;i<ecs.flags.size;++i){
 		uint32_t eid = entities[i];
 		uint64_t flag = EntityFlagsGet(&(ecs.flags), entities[i]).val;
-		if ((flag & ENTITY_DEACTIVATE) == ENTITY_DEACTIVATE){
+		uint8_t modFlag = (1<<ENTITY_DEACTIVATE);
+		if ((flag & modFlag) == modFlag){
 			smite(eid);
 		}
 	}
