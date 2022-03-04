@@ -1,9 +1,9 @@
 <h1 align="center">ECS Data Management Architecture</h1>
+	<img align="center" width=55% height=50% src="https://github.com/LucAlexander/Entity-Component-System/blob/main/ECS.png"></img>
 	<p>
 		A data component system, or entity component system (ECS), is a data management system which aims to optimize for high program locality. The concept comes from the game development community, and has seen many different implementation standards, but its use cases reach far beyond this context. 
 		This data component system is a general purpose implementation built for compatibility and speed. It is relatively lightweight and can handle a large data load, and should modularly fit into most C or C++ projects. 
 	</p>
-	 <img src="https://github.com/LucAlexander/Entity-Component-System/blob/main/ECS.png"></img>
 	<h2 align="left">Dependancies</h2>
 	<p>
 		This code base uses the Data Containers library listed on my github at <a href = "https://Github.com/LucAlexander/DataContainers/">this repository</a>, which includes a make target to build the static library. All code is compiled and tested on GNU-C 11.
@@ -18,5 +18,4 @@
 			The provided Makefile contains reference to a sourcefile <code>ecsmain.c</code>, replace this with any code you want to be included in the build of your library using this project.
 		</p>
 	<h2 align="left">Documentation</h2>
-
-
+	
