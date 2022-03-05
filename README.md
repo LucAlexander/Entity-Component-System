@@ -47,15 +47,35 @@ Eample usage:<br>
 uint32_t entity = summon();<br>
 </code>
 </p>
+<br>
 <p>
 To destroy the registered entity and all its components, as well as release the entity back to the management system so it acn be reused, call <code>void smite(uint32_t eid)</code>.
 </p>
+<br>
 <p>
 Example usage:<br>
 <code>
 uint32_t entity = summon();<br>
 smite(entity);<br>
 </code>
+</p>
+<br>
+<p>
+You can give entities flags, some flags are built in and are meant for specific purposes, but you can create your own flags. Currently the default enumerator which represents these flags exists as follows:<br>
+<code>
+enum ESC_DEFAULT_FLAGS{<br>
+&emsp;ENTITY_DEACTIVATE=0,<br>
+&emsp;RENDER_RELATIVE=1,<br>
+&emsp;RENDER_ABSOLUTE=2<br>
+};<br>
+</code>
+The first is for destroying entities. You'll find that destoying entities works best if they are marked and then destroye at the end of a frame, as it prevents confictions with referencing entities which were available for one sytem but not for another. The other two are placeholders for whatever graphical utility you choose to use. <code>RENDER_RELATIVE</code> implies that some image will be rendered relative to some in window view, while <code>RENDER_ABSOLUTE</code> implies that some image will be rendered with absolute positioning relative to the screen. You do not have to use these, but they are there for your conventience.
+</p>
+<p>
+Flags can be added and removed with <code>addEntityFlag(uint32_t eid, uint64_t flagBit);</code> and <code>removeEntitiyFlag(uint32_t eid, uint64_t flagBit);</code> respectively. <code>marForPurge(uint32_t eid);</code> is a short cut to apply the <code>ENTITY_DEACTIVATE</code> flag to an entity.
+</p>
+<p>
+Speaking of marking entities for destruction, <code>void purgeDeactivatedData();</code> will free and remove all entities marked with the <code>ENTITY_DEACTIVATE</code> flag.
 </p>
 <br>
 <h2>Data Components</h2>
@@ -91,5 +111,69 @@ removeComponent(entity, 0);
 </code>
 </p>
 <br>
-<h2>Systems</h2>
+<p>
+You may find yourself needing to check whether or not some entity contains some other component. For this use <code>uint8_t containsComponent(uint32_t eid, uint32_t cid);</code> and subsequently you may find it useful to use <code>void\* getComponent(uint32_t eid, uint32_t cid);</code>.
+</p>
+<p>
+Example usage:<br>
+<code>
+if (containsComponent(save_button, pressable_component_id)){<br>
+&emsp;void\* pressable = getComponent(save_button, pressable_component_id);<br>
+}<br>
+</code>
+</p>
+<br>
+<h2>Logic Systems</h2>
+<p>
+Logic Systems are functions which operate on a subset of components. A system can be created with <code>System SystemInit(void sys(SysData\*), uint32_t n, ...);</code>. The first argument is a pointer to a function which takes a SysData pointer. The SysData struct is opaque, and is managed by the ECS, it contains all the relevant data for any given iteration over the subset of components for the logic system you are creating. The second argument is how many component types this system will operate on, followed by a variadic argument list of component ids.
+</p>
+<p>
+SysData provides two functions to query for information about the current iteration. <code>uint32_t entityArg(SysDate\* s);</code> gives the current entity id, and <code>void\* componentArg(SysDate\* s, uint32_t component);</code> which provides a pointer to one of the components querried for by the current iteration of the logic system. The second argument however is not a component id, but rather an indicator of which argument is being pulled, starting from 0, 1, 2, etc.
+</p>
+<p>
+Example usage:<br>
+<code>
+typedef enum COMPONENT_IDS{
+&emsp;POSITION_C,
+&emsp;FORCES_C
+}COMPONENT_IDS;
+void move(SysData\* sys){<br>
+&emsp;v2\* pos = componentArg(sys, 0);<br>
+&emsp;v2\* forces = componentArg(sys, 1);<br>
+&emsp;uint32_t entity = entityArg(sys);<br>
+&emsp;pos->x += forces->x;<br>
+&emsp;pos->y += forces->y;<br>
+}<br>
+<br>
+int main(void){<br>
+&emsp;System move_s = SystemInit(move, 2, POSITION_C, FORCES_C);<br>
+}<br>
+</code>
+Note that every system you create you must also manually free with <code>SystemFree(System\* sys)</code>
+</p>
+<br>
+<p>
+In order to querry the ESC for relevant data and run the internal logic function in a logic system, call <code>void SystemActivate(System\* sys);</code>
+</p>
+<br>
+<p>
+By nature, logic systems will collect all, and only all data relating to the list of component ids you pass it. You can also give them flags to filter by. passing an entity enumeration value like <code>ENTITY_DEACTIVATE</code> to <code>SystemAddFilter(System\* sys, uint64_t flag);</code> will tell the system to skip over any entity that has that flag.
+</p>
+<p>
+Similarly you can remove these flags by using <code>SystemRemoveFilter(System\* sys, uint64_t flag);</code>
+</p>
+<br>
 <h2>Freeing Memory</h2>
+<p>
+Systems need to be freed manually with <code>void SystemFree(System\* sys);</code>, and the ECS should be freed at program end as well; <code>freeEcs();</code>.
+</p>
+<p>
+If a component has heap allocated memory in it, that component must be given a custom function to free its memory. This is the responsibility of the user, as <code>void smite(uint32_t eid);</code>, <code>void purgeDeactivatedData();</code> etc will remove the reference to those pointers otherwise, causing an indirect memory leak.
+</p>
+<h2>Debug</h2>
+<p>
+<code>void ecsDisplay();</code> will show the current state of the data management system.
+</p>
+<p>
+<code>void displayComponentQuery();</code> will display the most recent data query as part of a <code>void SystemActivate(System\* sys);</code>
+</p>
