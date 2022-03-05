@@ -1,4 +1,4 @@
-<h1 align="center">ECS Data Management Architecture</h1>
+<h1 align="left">ECS Data Management Architecture</h1>
 <center><img align="center" width=55% height=50% src="https://github.com/LucAlexander/Entity-Component-System/blob/main/ECS.png"></img></center>
 <p>
 A data component system, or entity component system (ECS), is a data management system which aims to optimize for high program locality. The concept comes from the game development community, and has seen many different implementation standards, but its use cases reach far beyond this context. 
