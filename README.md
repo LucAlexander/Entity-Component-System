@@ -1,16 +1,19 @@
-#ECS Data Management Architecture
+# ECS Data Management Architecture
 ![](https://github.com/LucAlexander/Entity-Component-System/blob/main/ECS.png)
 A data component system, or entity component system (ECS), is a data management system which aims to optimize for high program locality. The concept comes from the game development community, and has seen many different implementation standards, but its use cases reach far beyond this context. 
 This data component system is a general purpose implementation built for compatibility and speed. It is relatively lightweight and can handle a large data load, and should modularly fit into most C or C++ projects. 
-##Dependancies
+
+## Dependancies
 This code base uses the Data Containers library listed on my github at [this repository](https://Github.com/LucAlexander/DataContainers/), which includes a make target to build the static library. All code is compiled and tested on GNU-C 11.
-##Usage
-###Build the library from source
+
+## Usage
+### Build the library from source
 Use the build target `make build` to build the source code into a static library, you may then replace the `ecsmain.c` token within the make file with any source files you wish to link to the library, and run `make linkedCompile`.
 ###Building your own library
 The provided Makefile contains reference to a sourcefile `ecsmain.c`, replace this with any code you want to be included in the build of your library using this project.
-#Documentation
-##Initialization
+
+# Documentation
+## Initialization
 Initialize the data management system using `ecsInit(uint32_t componentCount, ...);`. The first argument is the number of component types you intend to use, followed by a variadic argument list of `size_t` component sizes.
 Example usage:
 ```
@@ -23,7 +26,8 @@ ecsInit(4,
 ```
 
 Note that the order of these is very important, as the order determines the id associated with every component type. It is reccommended that you keep track of these ids in some sort of enumerator or list structure.
-##Date Entities
+
+## Date Entities
 "Entities", or, the containers which store data components, are entirely conceptual. They exist simply as an unsigned 32 bit id. which is generated and registered by the data system. To generate one of these ids, call `uint32_t summon();`.
 Eample usage:
 ```
@@ -79,7 +83,7 @@ if (containsComponent(save_button, pressable_component_id)){
 }
 ```
 
-##Logic Systems
+## Logic Systems
 Logic Systems are functions which operate on a subset of components. A system can be created with `System SystemInit(void sys(SysData*), uint32_t n, ...);`. The first argument is a pointer to a function which takes a SysData pointer. The SysData struct is opaque, and is managed by the ECS, it contains all the relevant data for any given iteration over the subset of components for the logic system you are creating. The second argument is how many component types this system will operate on, followed by a variadic argument list of component ids.
 SysData provides two functions to query for information about the current iteration. `uint32_t entityArg(SysDate* s);` gives the current entity id, and `void* componentArg(SysDate* s, uint32_t component);` which provides a pointer to one of the components querried for by the current iteration of the logic system. The second argument however is not a component id, but rather an indicator of which argument is being pulled, starting from 0, 1, 2
 Example usage:
@@ -106,9 +110,11 @@ Note that every system you create you must also manually free with `SystemFree(S
 In order to querry the ESC for relevant data and run the internal logic function in a logic system, call `void SystemActivate(System* sys);`
 By nature, logic systems will collect all, and only all data relating to the list of component ids you pass it. You can also give them flags to filter by. passing an entity enumeration value like `ENTITY_DEACTIVATE` to `SystemAddFilter(System* sys, uint64_t flag);` will tell the system to skip over any entity that has that flag.
 Similarly you can remove these flags by using `SystemRemoveFilter(System* sys, uint64_t flag);`
-##Freeing Memory
+
+## Freeing Memory
 Systems need to be freed manually with `void SystemFree(System* sys);`, and the ECS should be freed at program end as well; `freeEcs();`.
 If a component has heap allocated memory in it, that component must be given a custom function to free its memory. This is the responsibility of the user, as `void smite(uint32_t eid);`, `void purgeDeactivatedData();` etc will remove the reference to those pointers otherwise, causing an indirect memory leak.
-##Debug
+
+## Debug
 `void ecsDisplay();` will show the current state of the data management system.
 `void displayComponentQuery();` will display the most recent data query as part of a `void SystemActivate(System* sys);`
