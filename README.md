@@ -80,100 +80,100 @@
     <br>
   <h2>Data Components</h2>
     <p>
-    Components much like entities are registered as an id. These ids are unique and it is reccommeded you keep track of which id corrosponds to which component, these ids are sequential integers starting at 0.
+      Components much like entities are registered as an id. These ids are unique and it is reccommeded you keep track of which id corrosponds to which component, these ids are sequential integers starting at 0.
     </p>
     <p>
-    A data component can be anything, from a simple integer type to a complex struct. It is reccommended that you keep these structures small though, so that as much relevant data can be stored contiguously.
+      A data component can be anything, from a simple integer type to a complex struct. It is reccommended that you keep these structures small though, so that as much relevant data can be stored contiguously.
     </p>
     <p>
-    To register an instance of a component with an existing entity id, call <code>void addComponent(uint32_t eid, uint32_t cid, void\* data);</code>
+      To register an instance of a component with an existing entity id, call <code>void addComponent(uint32_t eid, uint32_t cid, void* data);</code>
     </p>
     <p>
-    Example usage:<br>
-    <code>
-    ecsInit(1, sizeof(v2));
-    uint32_t entity = summon():<br>
-    v2 pos = {32, 48};<br>
-    addComponent(entity, 0, &pos);<br>
-    </code>
+      Example usage:<br>
+      <code>
+        ecsInit(1, sizeof(v2));
+        uint32_t entity = summon():<br>
+        v2 pos = {32, 48};<br>
+        addComponent(entity, 0, &pos);<br>
+      </code>
     </p>
     <p>
-    Similarly, to remove an existing component from an existing entity id use <code>removeComponent(uint32_t eid, uint32_t cid);</code>
+      Similarly, to remove an existing component from an existing entity id use <code>removeComponent(uint32_t eid, uint32_t cid);</code>
     </p>
     <p>
-    Example usage:<br>
-    <code>
-    ecsInit(1, sizeof(v2));
-    uint32_t entity = summon():<br>
-    v2 pos = {32, 48};<br>
-    addComponent(entity, 0, &pos);<br>
-    removeComponent(entity, 0);
-    </code>
+      Example usage:<br>
+      <code>
+        ecsInit(1, sizeof(v2));
+        uint32_t entity = summon():<br>
+        v2 pos = {32, 48};<br>
+        addComponent(entity, 0, &pos);<br>
+        removeComponent(entity, 0);
+      </code>
     </p>
     <br>
     <p>
-    You may find yourself needing to check whether or not some entity contains some other component. For this use <code>uint8_t containsComponent(uint32_t eid, uint32_t cid);</code> and subsequently you may find it useful to use <code>void\* getComponent(uint32_t eid, uint32_t cid);</code>.
+      You may find yourself needing to check whether or not some entity contains some other component. For this use <code>uint8_t containsComponent(uint32_t eid, uint32_t cid);</code> and subsequently you may find it useful to use <code>void* getComponent(uint32_t eid, uint32_t cid);</code>.
     </p>
     <p>
-    Example usage:<br>
-    <code>
-    if (containsComponent(save_button, pressable_component_id)){<br>
-    &emsp;void\* pressable = getComponent(save_button, pressable_component_id);<br>
-    }<br>
-    </code>
+      Example usage:<br>
+      <code>
+        if (containsComponent(save_button, pressable_component_id)){<br>
+        &emsp;void* pressable = getComponent(save_button, pressable_component_id);<br>
+        }<br>
+      </code>
     </p>
     <br>
   <h2>Logic Systems</h2>
     <p>
-    Logic Systems are functions which operate on a subset of components. A system can be created with <code>System SystemInit(void sys(SysData\*), uint32_t n, ...);</code>. The first argument is a pointer to a function which takes a SysData pointer. The SysData struct is opaque, and is managed by the ECS, it contains all the relevant data for any given iteration over the subset of components for the logic system you are creating. The second argument is how many component types this system will operate on, followed by a variadic argument list of component ids.
+      Logic Systems are functions which operate on a subset of components. A system can be created with <code>System SystemInit(void sys(SysData*), uint32_t n, ...);</code>. The first argument is a pointer to a function which takes a SysData pointer. The SysData struct is opaque, and is managed by the ECS, it contains all the relevant data for any given iteration over the subset of components for the logic system you are creating. The second argument is how many component types this system will operate on, followed by a variadic argument list of component ids.
     </p>
     <p>
-    SysData provides two functions to query for information about the current iteration. <code>uint32_t entityArg(SysDate\* s);</code> gives the current entity id, and <code>void\* componentArg(SysDate\* s, uint32_t component);</code> which provides a pointer to one of the components querried for by the current iteration of the logic system. The second argument however is not a component id, but rather an indicator of which argument is being pulled, starting from 0, 1, 2, etc.
+      SysData provides two functions to query for information about the current iteration. <code>uint32_t entityArg(SysDate* s);</code> gives the current entity id, and <code>void* componentArg(SysDate* s, uint32_t component);</code> which provides a pointer to one of the components querried for by the current iteration of the logic system. The second argument however is not a component id, but rather an indicator of which argument is being pulled, starting from 0, 1, 2, etc.
     </p>
     <p>
-    Example usage:<br>
-    <code>
-    typedef enum COMPONENT_IDS{
-    &emsp;POSITION_C,
-    &emsp;FORCES_C
-    }COMPONENT_IDS;
-    void move(SysData\* sys){<br>
-    &emsp;v2\* pos = componentArg(sys, 0);<br>
-    &emsp;v2\* forces = componentArg(sys, 1);<br>
-    &emsp;uint32_t entity = entityArg(sys);<br>
-    &emsp;pos->x += forces->x;<br>
-    &emsp;pos->y += forces->y;<br>
-    }<br>
-    <br>
-    int main(void){<br>
-    &emsp;System move_s = SystemInit(move, 2, POSITION_C, FORCES_C);<br>
-    }<br>
-    </code>
-    Note that every system you create you must also manually free with <code>SystemFree(System\* sys)</code>
-    </p>
-    <br>
-    <p>
-    In order to querry the ESC for relevant data and run the internal logic function in a logic system, call <code>void SystemActivate(System\* sys);</code>
+      Example usage:<br>
+      <code>
+        typedef enum COMPONENT_IDS{
+        &emsp;POSITION_C,
+        &emsp;FORCES_C
+        }COMPONENT_IDS;
+        void move(SysData* sys){<br>
+        &emsp;v2* pos = componentArg(sys, 0);<br>
+        &emsp;v2* forces = componentArg(sys, 1);<br>
+        &emsp;uint32_t entity = entityArg(sys);<br>
+        &emsp;pos->x += forces->x;<br>
+        &emsp;pos->y += forces->y;<br>
+        }<br>
+        <br>
+        int main(void){<br>
+        &emsp;System move_s = SystemInit(move, 2, POSITION_C, FORCES_C);<br>
+        }<br>
+      </code>
+      Note that every system you create you must also manually free with <code>SystemFree(System* sys)</code>
     </p>
     <br>
     <p>
-    By nature, logic systems will collect all, and only all data relating to the list of component ids you pass it. You can also give them flags to filter by. passing an entity enumeration value like <code>ENTITY_DEACTIVATE</code> to <code>SystemAddFilter(System\* sys, uint64_t flag);</code> will tell the system to skip over any entity that has that flag.
+      In order to querry the ESC for relevant data and run the internal logic function in a logic system, call <code>void SystemActivate(System* sys);</code>
+    </p>
+    <br>
+    <p>
+      By nature, logic systems will collect all, and only all data relating to the list of component ids you pass it. You can also give them flags to filter by. passing an entity enumeration value like <code>ENTITY_DEACTIVATE</code> to <code>SystemAddFilter(System* sys, uint64_t flag);</code> will tell the system to skip over any entity that has that flag.
     </p>
     <p>
-    Similarly you can remove these flags by using <code>SystemRemoveFilter(System\* sys, uint64_t flag);</code>
+      Similarly you can remove these flags by using <code>SystemRemoveFilter(System* sys, uint64_t flag);</code>
     </p>
     <br>
    <h2>Freeing Memory</h2>
     <p>
-    Systems need to be freed manually with <code>void SystemFree(System\* sys);</code>, and the ECS should be freed at program end as well; <code>freeEcs();</code>.
+      Systems need to be freed manually with <code>void SystemFree(System* sys);</code>, and the ECS should be freed at program end as well; <code>freeEcs();</code>.
     </p>
     <p>
-    If a component has heap allocated memory in it, that component must be given a custom function to free its memory. This is the responsibility of the user, as <code>void smite(uint32_t eid);</code>, <code>void purgeDeactivatedData();</code> etc will remove the reference to those pointers otherwise, causing an indirect memory leak.
+      If a component has heap allocated memory in it, that component must be given a custom function to free its memory. This is the responsibility of the user, as <code>void smite(uint32_t eid);</code>, <code>void purgeDeactivatedData();</code> etc will remove the reference to those pointers otherwise, causing an indirect memory leak.
     </p>
   <h2>Debug</h2>
     <p>
-    <code>void ecsDisplay();</code> will show the current state of the data management system.
+      <code>void ecsDisplay();</code> will show the current state of the data management system.
     </p>
     <p>
-    <code>void displayComponentQuery();</code> will display the most recent data query as part of a <code>void SystemActivate(System\* sys);</code>
+      <code>void displayComponentQuery();</code> will display the most recent data query as part of a <code>void SystemActivate(System* sys);</code>
     </p>
