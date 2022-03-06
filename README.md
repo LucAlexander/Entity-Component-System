@@ -1,5 +1,6 @@
 # ECS Data Management Architecture
 ![](https://github.com/LucAlexander/Entity-Component-System/blob/main/ECS.png)
+
 A data component system, or entity component system (ECS), is a data management system which aims to optimize for high program locality. The concept comes from the game development community, and has seen many different implementation standards, but its use cases reach far beyond this context. 
 This data component system is a general purpose implementation built for compatibility and speed. It is relatively lightweight and can handle a large data load, and should modularly fit into most C or C++ projects. 
 
@@ -53,7 +54,8 @@ enum ESC_DEFAULT_FLAGS{
 The first is for destroying entities. You'll find that destoying entities works best if they are marked and then destroye at the end of a frame, as it prevents confictions with referencing entities which were available for one sytem but not for another. The other two are placeholders for whatever graphical utility you choose to use. `RENDER_RELATIVE` implies that some image will be rendered relative to some in window view, while `RENDER_ABSOLUTE` implies that some image will be rendered with absolute positioning relative to the screen. You do not have to use these, but they are there for your conventience.
 Flags can be added and removed with `addEntityFlag(uint32_t eid, uint64_t flagBit);` and `removeEntitiyFlag(uint32_t eid, uint64_t flagBit);` respectively. `marForPurge(uint32_t eid);` is a short cut to apply the `ENTITY_DEACTIVATE` flag to an entity.
 Speaking of marking entities for destruction, `void purgeDeactivatedData();` will free and remove all entities marked with the `ENTITY_DEACTIVATE` flag.
-##Data Components
+
+## Data Components
 Components much like entities are registered as an id. These ids are unique and it is reccommeded you keep track of which id corrosponds to which component, these ids are sequential integers starting at 0.
 A data component can be anything, from a simple integer type to a complex struct. It is reccommended that you keep these structures small though, so that as much relevant data can be stored contiguously.
 To register an instance of a component with an existing entity id, call `void addComponent(uint32_t eid, uint32_t cid, void* data);`
