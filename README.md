@@ -56,7 +56,7 @@ enum ESC_DEFAULT_FLAGS{
 
 The first is for destroying entities. You'll find that destoying entities works best if they are marked and then destroye at the end of a frame, as it prevents confictions with referencing entities which were available for one sytem but not for another. The other two are placeholders for whatever graphical utility you choose to use. `RENDER_RELATIVE` implies that some image will be rendered relative to some in window view, while `RENDER_ABSOLUTE` implies that some image will be rendered with absolute positioning relative to the screen. You do not have to use these, but they are there for your conventience.
 
-Flags can be added and removed with `addEntityFlag(uint32_t eid, uint64_t flagBit);` and `removeEntitiyFlag(uint32_t eid, uint64_t flagBit);` respectively. `marForPurge(uint32_t eid);` is a short cut to apply the `ENTITY_DEACTIVATE` flag to an entity.
+Flags can be added and removed with `addEntityFlag(uint32_t eid, uint64_t flagBit);` and `removeEntitiyFlag(uint32_t eid, uint64_t flagBit);` respectively. `markForPurge(uint32_t eid);` is a short cut to apply the `ENTITY_DEACTIVATE` flag to an entity.
 
 Speaking of marking entities for destruction, `void purgeDeactivatedData();` will free and remove all entities marked with the `ENTITY_DEACTIVATE` flag.
 
