@@ -55,14 +55,16 @@ typedef struct ComponentQuery{
 	Mu32 indexes;
 }ComponentQuery;
 
-ComponentQuery* ecsQuery(Vu64* mask, Vu32* bits, uint64_t filter);
+ComponentQuery* ecsQuery(Vu64* mask, Vu32* bits, uint64_t filter, uint64_t magnet);
 ComponentQuery ComponentQueryInit();
-void queryPullArchetypeCid(Archetype* arc, uint32_t relIndex, uint32_t index, uint32_t* eids, uint64_t filter);
-void queryPullArchetypeEids(uint32_t* eids, uint32_t size, uint64_t filter);
-void queryScrubArchetype(Archetype* arc, Vu32* bits, uint64_t filter);
+void queryPullArchetypeCid(Archetype* arc, uint32_t relIndex, uint32_t index, uint32_t* eids, uint64_t filter, uint64_t magnet);
+void queryPullArchetypeEids(uint32_t* eids, uint32_t size, uint64_t filter, uint64_t magnet);
+void queryScrubArchetype(Archetype* arc, Vu32* bits, uint64_t filter, uint64_t magnet);
 void clearComponentQuery();
 void freeComponentQuery(ComponentQuery* q);
 void displayComponentQuery();
+
+uint8_t queryFlagsLineUp(uint64_t target, uint64_t filter, uint64_t magnet);
 
 typedef struct SysData{
 	uint32_t entity;
@@ -138,11 +140,14 @@ typedef struct System{
 	Vu64 mask;
 	Vu32 bits;
 	uint64_t filter;
+	uint64_t magnet;
 	void (*function)(SysData* sys);
 	MatrixByPtr components;
 }System;
 
 System SystemInit(void sys(SysData*), uint32_t n, ...);
+void SystemAddMagnet(System* sys, uint64_t flag);
+void SystemRemoveMagnet(System* sys, uint64_t flag);
 void SystemAddFilter(System* sys, uint64_t flag);
 void SystemRemoveFilter(System* sys, uint64_t flag);
 void SystemActivate(System* sys);

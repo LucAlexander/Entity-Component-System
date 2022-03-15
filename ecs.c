@@ -575,7 +575,7 @@ ComponentQuery ComponentQueryInit(){
 	return q;
 }
 
-ComponentQuery* ecsQuery(Vu64* mask, Vu32* bits, uint64_t filter){
+ComponentQuery* ecsQuery(Vu64* mask, Vu32* bits, uint64_t filter, uint64_t magnet){
 	clearComponentQuery();
 	uint32_t i;
 	for (i = 0;i<bits->size;++i){
@@ -585,43 +585,50 @@ ComponentQuery* ecsQuery(Vu64* mask, Vu32* bits, uint64_t filter){
 	for (i = 0;i<ecs.masks.size;++i){
 		Vu64 candidate = Mu64Get(&(ecs.masks), i);
 		if(maskCompare(mask, &candidate)){
-			queryScrubArchetype(ArchetypeListRef(&(ecs.archetypes), i), bits, filter);
+			queryScrubArchetype(ArchetypeListRef(&(ecs.archetypes), i), bits, filter, magnet);
 		}
 	}
 	return &(ecs.query);
 }
 
-void queryPullArchetypeCid(Archetype* arc, uint32_t relIndex, uint32_t index, uint32_t* eids, uint64_t filter){
+uint8_t queryFlagsLineUp(uint64_t targetFlag, uint64_t filter, uint64_t magnet){
+	return ((((targetFlag & filter) != filter) || (filter==0)) && ((targetFlag & magnet ==targetFlag) || (magnet==0)));
+}
+
+
+void queryPullArchetypeCid(Archetype* arc, uint32_t relIndex, uint32_t index, uint32_t* eids, uint64_t filter, uint64_t magnet){
 	Vu32* list = Mu32Ref(&(ecs.query.indexes), relIndex);
 	uint32_t i;
 	for (i = 0;i<arc->data.size;++i){
 		uint32_t eid = eids[i];
-		if (((EntityFlagsGet(&(ecs.flags), eid).val & filter) != filter)||(filter==0)){
+		uint64_t targetFlag = EntityFlagsGet(&(ecs.flags), eid).val;
+		if (queryFlagsLineUp(targetFlag, filter, magnet)){
 			Vu32 indexes = ArchIndexesGet(&(arc->data), eid).val;
 			Vu32PushBack(list, Vu32Get(&indexes, index));
 		}
 	}
 }
 
-void queryPullArchetypeEids(uint32_t* eids, uint32_t size, uint64_t filter){
+void queryPullArchetypeEids(uint32_t* eids, uint32_t size, uint64_t filter, uint64_t magnet){
 	uint32_t i;
 	for (i = 0;i<size;++i){
 		uint32_t eid = eids[i];
-		if (((EntityFlagsGet(&(ecs.flags), eid).val & filter) != filter)||(filter==0)){
+		uint64_t targetFlag = EntityFlagsGet(&(ecs.flags), eid).val;
+		if (queryFlagsLineUp(targetFlag, filter, magnet)){
 			Vu32PushBack(&(ecs.query.entities), eid);
 		}
 	}
 }
 
-void queryScrubArchetype(Archetype* arc, Vu32* bits, uint64_t filter){
+void queryScrubArchetype(Archetype* arc, Vu32* bits, uint64_t filter, uint64_t magnet){
 	uint32_t i;
 	uint32_t k = 0;
 	uint32_t currentBit = Vu32Get(bits, k++);
 	uint32_t* eids = ArchIndexesGetKeySet(&(arc->data));
-	queryPullArchetypeEids(eids, arc->data.size, filter);
+	queryPullArchetypeEids(eids, arc->data.size, filter, magnet);
 	for (i = 0;i<arc->cids.size&&k<=bits->size;++i){
 		if (currentBit == Vu32Get(&(arc->cids), i)){
-			queryPullArchetypeCid(arc, k-1, i, eids, filter);
+			queryPullArchetypeCid(arc, k-1, i, eids, filter, magnet);
 			currentBit = Vu32Get(bits, k++);
 		}
 	}
@@ -662,6 +669,7 @@ System SystemInit(void f(SysData*), uint32_t n, ...){
 	sys.mask = createMask(0);
 	sys.bits = Vu32Init();
 	sys.filter = 0;
+	sys.magnet = 0;
 	sys.components = MatrixByPtrInit();
 	va_list v;
 	va_start(v, n);
@@ -687,8 +695,16 @@ void SystemRemoveFilter(System* sys, uint64_t flag){
 	sys->filter &= ~(1<<flag);
 }
 
+void SystemAddMagnet(System* sys, uint64_t flag){
+	sys->magnet |= (1<<flag);
+}
+
+void SystemRemoveMagnet(System* sys, uint64_t flag){
+	sys->magnet &= ~(1<<flag);
+}
+
 void SystemActivate(System* sys){
-	ComponentQuery* q = ecsQuery(&(sys->mask), &(sys->bits), sys->filter);
+	ComponentQuery* q = ecsQuery(&(sys->mask), &(sys->bits), sys->filter, sys->magnet);
 	SysData data = SysDataInit(q);
 	data.components = &(sys->components);
 	while (SysDataHasData(&data)){
