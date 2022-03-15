@@ -124,8 +124,10 @@ Note that every system you create you must also manually free with `SystemFree(S
 
 In order to querry the ESC for relevant data and run the internal logic function in a logic system, call `void SystemActivate(System* sys);`
 
-By nature, logic systems will collect all, and only all data relating to the list of component ids you pass it. You can also give them flags to filter by. passing an entity enumeration value like `ENTITY_DEACTIVATE` to `SystemAddFilter(System* sys, uint64_t flag);` will tell the system to skip over any entity that has that flag.
-Similarly you can remove these flags by using `SystemRemoveFilter(System* sys, uint64_t flag);`
+By nature, logic systems will collect all, and only all data relating to the list of component ids you pass it. You can also give them flags to filter by. passing an entity enumeration value like `ENTITY_DEACTIVATE` to `void SystemAddFilter(System* sys, uint64_t flag);` will tell the system to skip over any entity that has that flag.
+Similarly you can remove these flags by using `void SystemRemoveFilter(System* sys, uint64_t flag);`
+
+In complement to system filters you can add a system magnet, which will make the logic system only operate of entities which have a certain flag. This is accomplished with `void SystemAddMagnet(System* sys, uint64_t flag);`, they can also be removed with `void SystemRemoveMagnet(System* sys, uint64_t flag);`
 
 ## Freeing Memory
 Systems need to be freed manually with `void SystemFree(System* sys);`, and the ECS should be freed at program end as well; `freeEcs();`.
