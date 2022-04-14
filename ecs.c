@@ -592,7 +592,7 @@ ComponentQuery* ecsQuery(Vu64* mask, Vu32* bits, uint64_t filter, uint64_t magne
 }
 
 uint8_t queryFlagsLineUp(uint64_t targetFlag, uint64_t filter, uint64_t magnet){
-	return ((((targetFlag & filter) != filter) || (filter==0)) && ((targetFlag & magnet ==magnet) || (magnet==0)));
+	return ((((targetFlag & filter) != filter) || (filter==0)) && (((targetFlag & magnet) ==magnet) || (magnet==0)));
 }
 
 void queryPullArchetypeCid(Archetype* arc, uint32_t relIndex, uint32_t index, uint32_t* eids, uint64_t filter, uint64_t magnet){
