@@ -1,13 +1,19 @@
 CC=gcc
+CCWIN=x86_64-w64-mingw32-gcc
 CFLAGS=-lm -o
 CDEBUGFLAGS=-Wall -g
 OUT=ecsrun
-CLIBS=-L../DataContainers -lDataContainers
+CLIBS=-L./DataContainers -lDataContainers
+CLIBSWIN=-I./DataContainers/src/ -L./DataContainers
 FILES=ecsmain.c ecs.c ecs.h 
 LNAME=libEntityComponentSystem.a
 
 compile:
 	$(CC) $(FILES) $(CLIBS) $(CFLAGS) $(OUT) 
+
+compile-windows:
+	$(CCWIN) $(FILES) $(CLIBSWIN) $(CLIBS) $(CFLAGS) $(OUT).exe
+
 debug:
 	$(CC) $(FILES) $(CLIBS) $(CDEBUGFLAGS) $(CFLAGS) $(OUT)
 
