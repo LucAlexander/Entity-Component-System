@@ -17,6 +17,9 @@ compile-windows:
 debug:
 	$(CC) $(FILES) $(CLIBS) $(CDEBUGFLAGS) $(CFLAGS) $(OUT)
 
+debug-windows:
+	$(CCWIN) $(FILES) $(CLIBSWIN) $(CLIBS) $(CDEBUGFLAGS) $(CFLAGS) $(OUT).exe
+
 linkedCompile:
 	$(CC) ecsmain.c -L. -lEntityComponentSystem $(CLIBS) $(CFLAGS) $(OUT)
 
