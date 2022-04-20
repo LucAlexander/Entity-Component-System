@@ -1,0 +1,9 @@
+*.txt
+*.a
+*.py
+ecsmain.c
+object/
+VLC.sh
+DataContainers/
+ecsrun
+ecsrun.exe
