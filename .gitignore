@@ -7,3 +7,4 @@ VLC.sh
 DataContainers/
 ecsrun
 ecsrun.exe
+wintest.c
