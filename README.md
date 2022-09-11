@@ -1,3 +1,7 @@
+# This library is deprecated
+
+
+
 # ECS Data Management Architecture
 ![](https://github.com/LucAlexander/Entity-Component-System/blob/main/ECS.png)
 
